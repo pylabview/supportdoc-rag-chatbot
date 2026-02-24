@@ -1,0 +1,76 @@
+name: "TASK — Work item"
+description: "Create a Task issue with acceptance criteria + subtasks checklist."
+title: "[TASK] <short title>"
+labels: ["task"]
+body:
+  - type: input
+    id: epic_link
+    attributes:
+      label: Epic link
+      description: Link the Epic issue this Task belongs to.
+      placeholder: "https://github.com/<OWNER>/<REPO>/issues/###"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Pick the main area for this task.
+      options:
+        - docs
+        - ingest
+        - retrieval
+        - backend
+        - frontend
+        - eval
+        - infra
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What is this task?
+      description: Describe the goal and scope in a few sentences.
+      placeholder: |
+        Implement chunker that outputs chunks.jsonl with provenance fields:
+        doc_id, section_path, chunk_id, offsets, source_url, license, snapshot_id.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Bullet list of what must be true for this to be “done”.
+      placeholder: |
+        - chunks.jsonl produced end-to-end from raw docs
+        - metadata fields present and validated
+        - config options documented in README
+    validations:
+      required: true
+
+  - type: textarea
+    id: subtasks
+    attributes:
+      label: Subtasks checklist
+      description: Use GitHub task list checkboxes. Edit/add as needed.
+      value: |
+        - [ ] Subtask 1
+        - [ ] Subtask 2
+        - [ ] Subtask 3
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / links
+      description: Optional references, snippets, or design notes.
+      placeholder: |
+        - Related decision: docs/decisions.md#...
+        - Reference: docs/corpus.md
+    validations:
+      required: false

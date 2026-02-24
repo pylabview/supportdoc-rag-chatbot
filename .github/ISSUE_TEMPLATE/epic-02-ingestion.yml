@@ -1,0 +1,76 @@
+name: "EPIC 2 — Ingestion pipeline (parse → chunk → metadata)"
+description: "Downloader, parser, chunker, and ingest reporting."
+title: "[EPIC 2] Ingestion pipeline (parse → chunk → metadata)"
+labels: ['epic']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Acceptance criteria
+        - `chunks.jsonl` produced with provenance fields + ingest report saved.
+
+  - type: checkboxes
+    id: tasks
+    attributes:
+      label: Tasks (create separate Task issues for each)
+      description: Tick these as you complete each Task issue.
+      options:
+          - label: Downloader/fetcher
+            required: false
+          - label: Parser
+            required: false
+          - label: Chunker + metadata schema
+            required: false
+          - label: Ingestion reporting
+            required: false
+
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      description: GitHub handle(s) responsible for this epic (e.g., @rodrigo)
+      placeholder: "@your-handle"
+    validations:
+      required: false
+
+  - type: input
+    id: target_date
+    attributes:
+      label: Target date
+      description: Optional target completion date (YYYY-MM-DD)
+      placeholder: "2026-04-07"
+    validations:
+      required: false
+
+  - type: textarea
+    id: task_links
+    attributes:
+      label: Linked Task issues
+      description: Paste links to Task issues here as you create them.
+      placeholder: |
+        - https://github.com/<OWNER>/<REPO>/issues/123
+        - https://github.com/<OWNER>/<REPO>/issues/124
+    validations:
+      required: false
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies / blockers
+      description: Anything that must happen first (other epics, external decisions, tooling, etc.).
+      placeholder: |
+        - Depends on: EPIC 1
+        - Needs: GPU instance decision
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Extra context, decisions, or links.
+      placeholder: |
+        - Decision log entry: docs/decisions.md#...
+        - Reference diagrams: docs/architecture.md
+    validations:
+      required: false
