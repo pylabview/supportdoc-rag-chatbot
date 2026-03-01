@@ -1,0 +1,136 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "supportdoc-rag-chatbot"
+version = "0.1.0"
+description = "SupportDoc RAG chatbot with verifiable citations"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = { text = "MIT" }
+
+dependencies = [
+  # API
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic",
+  "httpx",
+  "python-dotenv",
+
+  # Utilities
+  "tenacity",
+  "orjson",
+  "tqdm",
+  "rich",
+  "regex",
+
+  # Ingestion
+  "beautifulsoup4",
+  "lxml",
+  "markdown-it-py",
+]
+
+[project.optional-dependencies]
+bm25 = ["rank-bm25"]
+
+faiss = ["faiss-cpu"]
+
+pgvector = [
+  "psycopg[binary]",
+  "pgvector",
+]
+
+opensearch = [
+  "opensearch-py",
+  "requests-aws4auth",
+]
+
+embeddings-local = [
+  "torch",
+  "transformers",
+  "sentence-transformers",
+  "accelerate",
+  "safetensors",
+  "huggingface-hub",
+  "sentencepiece",
+]
+
+embeddings-tei = [
+  "tei-client",
+]
+
+llm-tgi-client = [
+  "text-generation",
+]
+
+llm-vllm = [
+  # Linux-only
+  "vllm==0.16.0; platform_system == 'Linux' and platform_machine == 'x86_64'"
+]
+
+eval = [
+  "ragas",
+  "trulens",
+  "pandas",
+  "numpy",
+  "scikit-learn",
+  "matplotlib",
+  "datasets",
+]
+
+otel = [
+  "opentelemetry-api",
+  "opentelemetry-sdk",
+  "opentelemetry-instrumentation-fastapi",
+  "opentelemetry-exporter-otlp",
+]
+
+aws = ["boto3"]
+
+# ✅ THIS MUST LIVE INSIDE project.optional-dependencies
+dev-tools = [
+  "pytest",
+  "pytest-asyncio",
+  "ruff",
+  "mypy",
+  "pre-commit",
+  "ipykernel",
+  "ipython",
+  "ptpython",
+  "debugpy",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/supportdoc_rag_chatbot"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+fix = true
+
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+ignore = [
+    "E501",
+    "F401",
+    "F841",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["supportdoc_rag_chatbot"]
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
