@@ -18,6 +18,9 @@ dependencies = [
   "httpx",
   "python-dotenv",
 
+  # Database baseline (PostgreSQL)
+  "psycopg[binary]",
+
   # Utilities
   "tenacity",
   "orjson",
@@ -36,10 +39,7 @@ bm25 = ["rank-bm25"]
 
 faiss = ["faiss-cpu"]
 
-pgvector = [
-  "psycopg[binary]",
-  "pgvector",
-]
+pgvector = ["pgvector"]
 
 opensearch = [
   "opensearch-py",
@@ -88,7 +88,7 @@ otel = [
 
 aws = ["boto3"]
 
-# ✅ THIS MUST LIVE INSIDE project.optional-dependencies
+# Development tooling for local work
 dev-tools = [
   "pytest",
   "pytest-asyncio",
@@ -114,6 +114,9 @@ exclude = [
     ".venv",
     "venv",
     "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".mypy_cache",
     "build",
     "dist",
 ]

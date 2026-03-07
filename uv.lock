@@ -3704,6 +3704,7 @@ dependencies = [
     { name = "lxml" },
     { name = "markdown-it-py" },
     { name = "orjson" },
+    { name = "psycopg", extra = ["binary"] },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "regex" },
@@ -3773,7 +3774,6 @@ otel = [
 ]
 pgvector = [
     { name = "pgvector" },
-    { name = "psycopg", extra = ["binary"] },
 ]
 
 [package.metadata]
@@ -3803,7 +3803,7 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'eval'" },
     { name = "pgvector", marker = "extra == 'pgvector'" },
     { name = "pre-commit", marker = "extra == 'dev-tools'" },
-    { name = "psycopg", extras = ["binary"], marker = "extra == 'pgvector'" },
+    { name = "psycopg", extras = ["binary"] },
     { name = "ptpython", marker = "extra == 'dev-tools'" },
     { name = "pydantic" },
     { name = "pytest", marker = "extra == 'dev-tools'" },
