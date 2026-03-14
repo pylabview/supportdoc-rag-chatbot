@@ -1,0 +1,62 @@
+[
+  {
+    "name": "epic",
+    "color": "5319e7",
+    "description": "High-level initiative spanning multiple tasks."
+  },
+  {
+    "name": "task",
+    "color": "1d76db",
+    "description": "Actionable work item tied to an epic."
+  },
+  {
+    "name": "backend",
+    "color": "0052cc",
+    "description": "Backend/API work (FastAPI, orchestration, serving)."
+  },
+  {
+    "name": "frontend",
+    "color": "0e8a16",
+    "description": "Frontend/UI work (React, UX, evidence rendering)."
+  },
+  {
+    "name": "ingest",
+    "color": "fbca04",
+    "description": "Corpus ingestion: fetch/parse/chunk/metadata."
+  },
+  {
+    "name": "retrieval",
+    "color": "d93f0b",
+    "description": "Retrieval: embeddings, BM25, hybrid, reranking."
+  },
+  {
+    "name": "eval",
+    "color": "c2e0c6",
+    "description": "Evaluation harness, metrics, QA sets, reporting."
+  },
+  {
+    "name": "infra",
+    "color": "006b75",
+    "description": "Infrastructure & deployment (AWS, containers, ops)."
+  },
+  {
+    "name": "docs",
+    "color": "c5def5",
+    "description": "Documentation, diagrams, decision logs."
+  },
+  {
+    "name": "mvp",
+    "color": "91ca55",
+    "description": "Must-have for thin-slice MVP / demo."
+  },
+  {
+    "name": "stretch",
+    "color": "fef2c0",
+    "description": "Nice-to-have stretch goal (do after MVP)."
+  },
+  {
+    "name": "blocked",
+    "color": "b60205",
+    "description": "Blocked by a dependency or external decision."
+  }
+]
