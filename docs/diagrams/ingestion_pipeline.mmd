@@ -1,0 +1,32 @@
+flowchart TD
+    %% Define style classes
+    classDef input fill:#f1f3f4,stroke:#5f6368,stroke-width:1px,color:#202124,rx:4,ry:4;
+    classDef process fill:#e8f0fe,stroke:#3367d6,stroke-width:1px,color:#000,rx:4,ry:4;
+    classDef validate fill:#e6f4ea,stroke:#188038,stroke-width:1px,color:#000,rx:4,ry:4;
+    classDef embed fill:#fff4e5,stroke:#f9ab00,stroke-width:1px,color:#000,rx:4,ry:4;
+    classDef output fill:#f3e8fd,stroke:#9334e6,stroke-width:1px,color:#000,rx:4,ry:4;
+
+    %% Flow
+    A[Pinned Kubernetes docs snapshot<br/>Git commit hash] --> B[Apply allowlist / denylist rules]
+    B --> C[Build source manifest<br/>source_manifest.jsonl]
+    C --> D[Parse Markdown/MDX into structured sections<br/>sections.jsonl]
+    D --> E[Chunk sections with metadata<br/>chunk_id, offsets, source_url, license, snapshot_id]
+    E --> F[Validate corpus artifacts<br/>empty chunks, duplicate IDs, metadata completeness]
+    F --> G[Write ingest report<br/>ingest_report.json]
+    E --> H[Generate embeddings]
+    H --> I[Build vector index<br/>FAISS / pgvector / OpenSearch]
+    I --> J[Ready for retrieval + citation-aware generation]
+
+    %% References / configs
+    K[docs/data/corpus.md<br/>Human-readable corpus contract] -. defines rules .-> B
+    L[default_config.yaml<br/>Machine-readable corpus settings] -. configures .-> B
+    L -. configures .-> C
+    M[build_manifest.py<br/>Enforces corpus policy] -. produces .-> C
+
+    %% Apply class styling
+    class A input;
+    class B,C,D,E process;
+    class F,G validate;
+    class H,I embed;
+    class J output;
+    class K,L,M input;
