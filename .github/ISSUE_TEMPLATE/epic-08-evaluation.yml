@@ -21,7 +21,7 @@ body:
             required: false
           - label: Refusal correctness metrics
             required: false
-          - label: Optional: retrieval recall@k
+          - label: "Optional: retrieval recall@k"
             required: false
           - label: Latency metrics
             required: false

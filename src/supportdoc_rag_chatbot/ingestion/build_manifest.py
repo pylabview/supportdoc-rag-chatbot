@@ -60,16 +60,18 @@ def main():
         if not is_allowed(rel):
             continue
 
-        records.append({
-            "snapshot_id": args.snapshot_id,
-            "source_path": rel.as_posix(),
-            "source_url": source_url(rel),
-            "doc_id": doc_id(rel),
-            "language": "en",
-            "license": "CC BY 4.0",
-            "attribution": "Kubernetes Documentation © The Kubernetes Authors",
-            "allowed": True
-        })
+        records.append(
+            {
+                "snapshot_id": args.snapshot_id,
+                "source_path": rel.as_posix(),
+                "source_url": source_url(rel),
+                "doc_id": doc_id(rel),
+                "language": "en",
+                "license": "CC BY 4.0",
+                "attribution": "Kubernetes Documentation © The Kubernetes Authors",
+                "allowed": True,
+            }
+        )
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
 

@@ -21,7 +21,7 @@ body:
             required: false
           - label: Attribution display
             required: false
-          - label: Optional: streaming UX
+          - label: "Optional: streaming UX"
             required: false
 
   - type: input

@@ -11,15 +11,18 @@ Usage:
 Notes:
   - Uses `gh label create --force` so existing labels are updated in-place.
 """
+
 import argparse
 import json
 import subprocess
 import sys
 from pathlib import Path
 
+
 def run(cmd: list[str]) -> None:
     print("+", " ".join(cmd))
     subprocess.check_call(cmd)
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -35,16 +38,23 @@ def main() -> int:
         color = lb.get("color", "ededed")
         desc = lb.get("description", "")
         cmd = [
-            "gh", "label", "create", name,
-            "--repo", args.repo,
-            "--color", color,
-            "--description", desc,
+            "gh",
+            "label",
+            "create",
+            name,
+            "--repo",
+            args.repo,
+            "--color",
+            color,
+            "--description",
+            desc,
             "--force",
         ]
         run(cmd)
 
     print("\nDone. Labels applied to", args.repo)
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
