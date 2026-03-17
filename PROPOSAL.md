@@ -1,9 +1,9 @@
 # Capstone Project Proposal - SupportDoc RAG Chatbot with Citations (V13)
 
-**Course:** DS552 – Generative AI  
-**Assignment:** Capstone Project Proposal (Web Application Using an Open-Source Pretrained LLM)  
-**Student:** Rodrigo Arguello Serrano  
-**Date:** 2026-02-19  
+**Course:** DS552 – Generative AI
+**Assignment:** Capstone Project Proposal (Web Application Using an Open-Source Pretrained LLM)
+**Student:** Rodrigo Arguello Serrano
+**Date:** 2026-02-19
 **Instructor:** Narahara Chari Dingari, Ph.D.
 
 ---
@@ -55,9 +55,9 @@ Faster, more consistent answers; reduced time to resolution; improved trust via 
 
 ### **3.1 Chosen model**
 
-- **Model name & version:** **Mistral-7B-Instruct-v0.3** (Mistral AI)  
-- **Model source / repository:** Hosted on Hugging Face model hub  
-- **License:** Apache-2.0  
+- **Model name & version:** **Mistral-7B-Instruct-v0.3** (Mistral AI)
+- **Model source / repository:** Hosted on Hugging Face model hub
+- **License:** Apache-2.0
 
 ### **3.2 Justification**
 
@@ -526,9 +526,9 @@ RAG systems expand the attack surface because the model consumes both user input
 
 This project implements a layered Retrieval-Augmented Generation (RAG) architecture designed to ensure grounded, citation-enforced responses over Kubernetes documentation. The system is structured across three clearly defined layers to promote modularity, scalability, and reproducibility:
 
-- **Model Layer** – Pretrained and/or fine-tuned language models sourced from the Hugging Face Hub  
-- **Application Layer** – Document ingestion, indexing, retrieval, generation, citation enforcement, and refusal logic  
-- **Infrastructure Layer** – AWS-based deployment environment providing compute, storage, API serving, and scalability  
+- **Model Layer** – Pretrained and/or fine-tuned language models sourced from the Hugging Face Hub
+- **Application Layer** – Document ingestion, indexing, retrieval, generation, citation enforcement, and refusal logic
+- **Infrastructure Layer** – AWS-based deployment environment providing compute, storage, API serving, and scalability
 
 This separation ensures model artifacts, retrieval logic, and infrastructure concerns remain independently configurable while functioning cohesively. The AWS infrastructure mapping is summarized in **§6.6** and expanded with service selection/cost considerations in **§9.2–§9.3**.
 
@@ -554,14 +554,14 @@ This separation ensures model artifacts, retrieval logic, and infrastructure con
 
 Kubernetes documentation is ingested from a fixed snapshot. Each chunk stores:
 
-- doc_id  
-- doc_title  
-- section_path  
-- chunk_id  
-- offsets  
-- source_url  
-- license  
-- snapshot_id  
+- doc_id
+- doc_title
+- section_path
+- chunk_id
+- offsets
+- source_url
+- license
+- snapshot_id
 
 This guarantees reproducibility and attribution compliance (CC BY 4.0) (Kubernetes Documentation, n.d.; Creative Commons, n.d.).
 
@@ -569,7 +569,7 @@ This guarantees reproducibility and attribution compliance (CC BY 4.0) (Kubernet
 
 ### **11.2 Embedding Model (Model Layer Integration)**
 
-Embedding models are sourced from the Hugging Face Hub (e.g., E5, BGE).  
+Embedding models are sourced from the Hugging Face Hub (e.g., E5, BGE).
 Version pinning ensures reproducibility.
 
 ---
@@ -578,10 +578,10 @@ Version pinning ensures reproducibility.
 
 Configurations evaluated:
 
-- BM25-only  
-- Dense-only  
-- Hybrid (BM25 + dense)  
-- Optional reranker  
+- BM25-only
+- Dense-only
+- Hybrid (BM25 + dense)
+- Optional reranker
 
 Configuration chosen based on recall@k + citation precision + latency trade-offs.
 
@@ -589,20 +589,20 @@ Configuration chosen based on recall@k + citation precision + latency trade-offs
 
 ### **11.4 Generation Model**
 
-- **Model:** Mistral-7B-Instruct-v0.3  
-- **Source:** Hugging Face Hub  
-- **License:** Apache-2.0  
+- **Model:** Mistral-7B-Instruct-v0.3
+- **Source:** Hugging Face Hub
+- **License:** Apache-2.0
 
 Inference options:
 
-- Hugging Face Inference Endpoint  
-- Self-hosted on AWS GPU instance  
+- Hugging Face Inference Endpoint
+- Self-hosted on AWS GPU instance
 
 Prompt enforces:
 
-- Use only retrieved context  
-- Cite every sentence  
-- Refuse if insufficient evidence  
+- Use only retrieved context
+- Cite every sentence
+- Refuse if insufficient evidence
 
 ---
 
@@ -610,17 +610,17 @@ Prompt enforces:
 
 Backend validates:
 
-- Every sentence must contain citation marker(s)  
-- Each marker references a chunk present in the retrieved set  
-- Citation offsets are valid relative to stored chunk bounds  
-- Refusal is triggered when evidence thresholds are not met  
+- Every sentence must contain citation marker(s)
+- Each marker references a chunk present in the retrieved set
+- Citation offsets are valid relative to stored chunk bounds
+- Refusal is triggered when evidence thresholds are not met
 
 Refusal reason codes:
 
-- insufficient_evidence  
-- no_relevant_docs  
-- citation_validation_failed  
-- out_of_scope  
+- insufficient_evidence
+- no_relevant_docs
+- citation_validation_failed
+- out_of_scope
 
 ---
 
@@ -630,9 +630,9 @@ To ground the proposed system design in established engineering practices, sever
 
 Architectural layers:
 
-- Model Layer → Hugging Face Hub  
-- Application Layer → RAG frameworks + citation enforcement  
-- Infrastructure Layer → AWS  
+- Model Layer → Hugging Face Hub
+- Application Layer → RAG frameworks + citation enforcement
+- Infrastructure Layer → AWS
 
 ---
 
@@ -640,44 +640,44 @@ Architectural layers:
 
 ### **k8s-docs-assistant-rag**
 
-https://github.com/dongminlee94/k8s-docs-assistant-rag  
+https://github.com/dongminlee94/k8s-docs-assistant-rag
 
-- Kubernetes documentation RAG pipeline  
-- Markdown ingestion + embedding retrieval  
-- Domain-aligned baseline  
+- Kubernetes documentation RAG pipeline
+- Markdown ingestion + embedding retrieval
+- Domain-aligned baseline
 
 ---
 
 ### **PrivateGPT**
 
-https://github.com/imartinez/privateGPT  
+https://github.com/imartinez/privateGPT
 
-- Minimal RAG implementation  
-- FAISS-based retrieval  
-- Open-source LLM integration  
+- Minimal RAG implementation
+- FAISS-based retrieval
+- Open-source LLM integration
 
 ---
 
 ### **12.2 RAG Frameworks**
 
-- **LlamaIndex** – https://github.com/run-llama/llama_index  
-- **Haystack** – https://github.com/deepset-ai/haystack  
-- **LangChain** – https://github.com/langchain-ai/langchain  
+- **LlamaIndex** – https://github.com/run-llama/llama_index
+- **Haystack** – https://github.com/deepset-ai/haystack
+- **LangChain** – https://github.com/langchain-ai/langchain
 
 ---
 
 ### **12.3 Infrastructure References**
 
-- AWS Multi-Tenant RAG Workshop  
-- Helm-based RAG deployments  
+- AWS Multi-Tenant RAG Workshop
+- Helm-based RAG deployments
 
 ---
 
 ### **12.4 Architectural Layer Clarification**
 
-- Hugging Face Hub → Model sourcing  
-- RAG frameworks → Application logic  
-- AWS → Deployment infrastructure  
+- Hugging Face Hub → Model sourcing
+- RAG frameworks → Application logic
+- AWS → Deployment infrastructure
 
 This layered architecture ensures modularity and reproducibility.
 

@@ -20,7 +20,7 @@ Project foundation and corpus-governance setup.
 - Initial manifest generator in `src/supportdoc_rag_chatbot/ingestion/build_manifest.py`.
 - Example source manifest in `data/manifests/source_manifest.jsonl`.
 - Corpus decision to use Kubernetes documentation as the primary support-doc knowledge base.
-- Snapshot strategy selected: **Git commit hash** for reproducible corpus versioning. 
+- Snapshot strategy selected: **Git commit hash** for reproducible corpus versioning.
 
 ### In Progress
 - Finalizing the pinned Kubernetes documentation snapshot ID and snapshot date.
@@ -53,7 +53,7 @@ This is the main orchestration layer implemented in this repository. It is respo
 - citation validation, and
 - refusal enforcement.
 
-The application layer is the core of the project because the main technical claim is not just “generate answers,” but “generate grounded answers with valid citations, or refuse when the evidence is not good enough.” 
+The application layer is the core of the project because the main technical claim is not just “generate answers,” but “generate grounded answers with valid citations, or refuse when the evidence is not good enough.”
 
 ### Infrastructure Layer
 The intended deployment target is an AWS-backed web application with a frontend, backend API, vector search layer, and model-serving component. The proposal currently targets a React-based UI, a FastAPI backend, object storage for artifacts, and a vector store such as FAISS, pgvector, or OpenSearch depending on the stage of the project. This layer is planned incrementally and will be documented further as deployment work is completed.
