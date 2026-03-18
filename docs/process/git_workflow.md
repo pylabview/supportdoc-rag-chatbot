@@ -281,7 +281,26 @@ Example for issue `#10`:
 git switch -c feat/10-repo-skeleton
 ```
 
-### Step 3: make changes locally and commit
+### Step 3: make changes locally
+
+Before committing, run the local quality gates so your branch matches the repository workflow and GitHub Actions behavior as closely as possible.
+
+Recommended commands:
+
+```bash
+uv sync
+uv run pre-commit run --all-files
+uv run pytest -q
+```
+
+Notes:
+
+- `uv sync` ensures the local environment matches the project lockfile.
+- `uv run pre-commit run --all-files` runs the configured formatting and lint hooks consistently.
+- `uv run pytest -q` runs the test suite inside the project environment.
+- If `pre-commit` modifies files, stage them again with `git add ...` before committing.
+
+### Step 4: commit
 
 Example commit message:
 
@@ -291,7 +310,7 @@ feat: create repo skeleton and development conventions
 
 This matches a clean Conventional Commits style.
 
-### Step 4: push the branch
+### Step 5: push the branch
 
 ```bash
 git push -u origin feat/10-repo-skeleton
@@ -340,6 +359,8 @@ This lets GitHub automatically close the linked issue when the PR is merged.
 - no accidental junk files are committed
 - file structure is correct
 - package/module naming is correct
+- `uv run pre-commit run --all-files` passes locally
+- `uv run pytest -q` passes locally
 - issue reference is present in the PR description
 
 ---
@@ -360,7 +381,15 @@ git pull origin main
 git switch -c feat/10-repo-skeleton
 ```
 
-Work locally, then:
+Work locally, then run the repository checks:
+
+```bash
+uv sync
+uv run pre-commit run --all-files
+uv run pytest -q
+```
+
+If hooks modify files, stage them again and continue:
 
 ```bash
 git add .
@@ -425,6 +454,7 @@ git fetch --prune
 A task issue is done when:
 
 - implementation is committed,
+- local quality checks pass (`uv run pre-commit run --all-files` and `uv run pytest -q`),
 - branch is pushed,
 - PR is opened,
 - PR includes `Closes #<issue-number>`,
@@ -441,6 +471,8 @@ A task issue is done when:
 - Keep branches short-lived.
 - Keep PRs focused.
 - Prefer clean history over large mixed commits.
+- Run `uv run pre-commit run --all-files` before committing.
+- Run `uv run pytest -q` before opening or updating a PR.
 - Implement sub-issues, not the Epic directly.
 - When creating a sub-issue from an Epic, choose **TASK — Work item**.
 - Use `git switch` instead of `git checkout` for branch changes.
