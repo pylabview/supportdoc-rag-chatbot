@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .chunker import chunk_sections
 from .jsonl import read_jsonl, write_jsonl
-from .schemas import SectionRecord
+from .schemas import ChunkRecord, SectionRecord
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -17,18 +17,34 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
-    args = build_arg_parser().parse_args()
-    sections = [SectionRecord.from_dict(payload) for payload in read_jsonl(args.input)]
+def build_chunks_artifact(
+    *,
+    sections_path: Path,
+    output_path: Path,
+    max_tokens: int = 350,
+    overlap_tokens: int = 50,
+) -> list[ChunkRecord]:
+    sections = [SectionRecord.from_dict(payload) for payload in read_jsonl(sections_path)]
     chunks = list(
         chunk_sections(
             sections,
-            max_tokens=args.max_tokens,
-            overlap_tokens=args.overlap_tokens,
+            max_tokens=max_tokens,
+            overlap_tokens=overlap_tokens,
         )
     )
-    count = write_jsonl(args.output, chunks)
-    print(f"Wrote {count} chunks to {args.output}")
+    write_jsonl(output_path, chunks)
+    return chunks
+
+
+def main() -> None:
+    args = build_arg_parser().parse_args()
+    chunks = build_chunks_artifact(
+        sections_path=args.input,
+        output_path=args.output,
+        max_tokens=args.max_tokens,
+        overlap_tokens=args.overlap_tokens,
+    )
+    print(f"Wrote {len(chunks)} chunks to {args.output}")
 
 
 if __name__ == "__main__":
