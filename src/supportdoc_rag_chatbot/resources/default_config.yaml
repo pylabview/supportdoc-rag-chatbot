@@ -1,0 +1,9 @@
+ingestion:
+  artifacts:
+    manifest_path: data/manifests/source_manifest.jsonl
+    sections_path: data/parsed/sections.jsonl
+    chunks_path: data/processed/chunks.jsonl
+    ingest_report_path: data/processed/ingest_report.json
+  chunking:
+    max_tokens: 350
+    overlap_tokens: 50
