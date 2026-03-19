@@ -15,7 +15,7 @@ flowchart TD
     A[Pinned Kubernetes docs snapshot<br/>Git commit hash] --> B[Apply allowlist / denylist rules]
     B --> C[Build source manifest<br/>source_manifest.jsonl]
     C --> D[Parse Markdown/MDX into structured sections<br/>sections.jsonl]
-    D --> E[Chunk sections with metadata<br/>chunk_id, offsets, source_url, license, snapshot_id]
+    D --> E[Chunk sections with metadata<br/>chunk_id, offsets, token_count, source_url, license, snapshot_id]
     E --> F[Validate corpus artifacts<br/>empty chunks, duplicate IDs, metadata completeness]
     F --> G[Write ingest report<br/>ingest_report.json]
     E --> H[Generate embeddings]
