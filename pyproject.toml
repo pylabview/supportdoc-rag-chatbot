@@ -137,3 +137,8 @@ combine-as-imports = true
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+]

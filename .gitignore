@@ -214,3 +214,5 @@ __marimo__/
 ._*
 .Spotlight-V100
 .Trashes
+# Generated retrieval artifacts
+data/processed/embeddings/

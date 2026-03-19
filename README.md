@@ -1,38 +1,37 @@
 ## 1. Project Overview
 
-SupportDoc RAG Chatbot is a document-grounded support assistant that answers user questions using an approved documentation corpus and provides verifiable citations to the exact supporting source passages. The project is designed to reduce hallucinations by combining retrieval-augmented generation (RAG), citation validation, and explicit refusal behavior when evidence is missing or insufficient. The initial deployed corpus for the project is a pinned snapshot of Kubernetes documentation, selected for its technical depth, structured format, and permissive CC BY 4.0 licensing. :contentReference[oaicite:2]{index=2}
+SupportDoc RAG Chatbot is a document-grounded support assistant that answers user questions using an approved documentation corpus and provides verifiable citations to the exact supporting source passages. The project is designed to reduce hallucinations by combining retrieval-augmented generation (RAG), citation validation, and explicit refusal behavior when evidence is missing or insufficient.
 
-The long-term goal is to deliver a production-style web application with a clear separation between ingestion, retrieval, generation, validation, and deployment concerns. At a high level, the system ingests an allowlisted documentation snapshot, converts it into structured chunks with provenance metadata, retrieves relevant evidence for a user query, generates an answer using an open-source LLM, and returns citations for each supported claim. If the retrieved evidence is weak, incomplete, or fails validation, the system refuses rather than guessing. :contentReference[oaicite:3]{index=3}
+The long-term goal is to deliver a production-style web application with a clear separation between ingestion, retrieval, generation, validation, and deployment concerns. At a high level, the system ingests an allowlisted documentation snapshot, converts it into structured chunks with provenance metadata, retrieves relevant evidence for a user query, generates an answer using an open-source LLM, and returns citations for each supported claim. If the retrieved evidence is weak, incomplete, or fails validation, the system refuses rather than guessing.
+
+The initial corpus is a pinned snapshot of Kubernetes documentation so the project can iterate on retrieval, answer grounding, and citation validation against a reproducible support-doc dataset.
 
 ---
 
 ## 2. Current Status
 
-This README is maintained as a **live project document** and will evolve as the implementation progresses.
+This README is maintained as a live project document and evolves with each completed task issue.
 
 ### Current Phase
-Project foundation and corpus-governance setup.
+Embeddings + local vector artifact groundwork.
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
-- Initial corpus governance documentation in `docs/data/corpus.md`.
-- Initial ingestion pipeline diagram in `docs/diagrams/ingestion_pipeline.md`.
-- Initial manifest generator in `src/supportdoc_rag_chatbot/ingestion/build_manifest.py`.
-- Example source manifest in `data/manifests/source_manifest.jsonl`.
-- Corpus decision to use Kubernetes documentation as the primary support-doc knowledge base.
-- Snapshot strategy selected: **Git commit hash** for reproducible corpus versioning.
+- Corpus governance documentation in `docs/data/corpus.md`.
+- Ingestion pipeline artifacts for manifest generation, parsing, section extraction, chunking, and validation.
+- Stable `chunks.jsonl` artifact with chunk-level provenance metadata.
+- Local embedding job that converts `data/processed/chunks.jsonl` into deterministic dense-vector artifacts for downstream index construction.
 
 ### In Progress
-- Finalizing the pinned Kubernetes documentation snapshot ID and snapshot date.
-- Refining corpus allowlist / denylist rules.
-- Preparing the ingestion workflow beyond manifest generation (parse → chunk → metadata validation).
+- Local vector-index backend for MVP dense retrieval.
+- Retrieval smoke test CLI.
+- Citation contract and refusal behavior integration.
 
 ### Next Up
-- Implement document parsing into structured sections.
-- Implement chunking with stable chunk IDs and provenance metadata.
-- Add embeddings and initial vector index.
-- Build retrieval smoke tests and answer generation contract.
-- Integrate citation validation and refusal logic into the backend pipeline. :contentReference[oaicite:6]{index=6}
+- Build the first local index backend over persisted embedding artifacts.
+- Add dense retrieval smoke tests and baseline retrieval evaluation.
+- Connect retrieval outputs to generation and citation validation.
+- Expand deployment and observability documentation as the backend/API layer matures.
 
 ---
 
@@ -41,22 +40,21 @@ Project foundation and corpus-governance setup.
 The project follows a three-layer architecture:
 
 ### Model Layer
-This layer contains the core ML components used for embeddings and answer generation. The current plan is to use an open-source instruct-tuned LLM as the generation baseline, with **Mistral-7B-Instruct-v0.3** as the proposed default model. For retrieval embeddings, the project is currently oriented around **E5** or **BGE** family models. These components are treated as replaceable so the system can compare retrieval and generation behavior without changing the rest of the application structure.
+This layer contains the ML components used for embeddings and answer generation. For local retrieval development, the project currently defaults to a lightweight sentence-transformers embedding model suitable for laptop workflows, while keeping the embedding model configurable so E5, BGE, or hosted embedding backends can be swapped in later.
 
 ### Application Layer
 This is the main orchestration layer implemented in this repository. It is responsible for:
 - corpus ingestion,
 - manifest generation,
 - parsing and chunking,
+- embedding artifact generation,
 - retrieval orchestration,
 - answer generation,
 - citation validation, and
 - refusal enforcement.
 
-The application layer is the core of the project because the main technical claim is not just “generate answers,” but “generate grounded answers with valid citations, or refuse when the evidence is not good enough.”
-
 ### Infrastructure Layer
-The intended deployment target is an AWS-backed web application with a frontend, backend API, vector search layer, and model-serving component. The proposal currently targets a React-based UI, a FastAPI backend, object storage for artifacts, and a vector store such as FAISS, pgvector, or OpenSearch depending on the stage of the project. This layer is planned incrementally and will be documented further as deployment work is completed.
+The intended deployment target is an AWS-backed web application with a frontend, backend API, vector search layer, and model-serving component. The proposal currently targets a React-based UI, a FastAPI backend, object storage for artifacts, and a vector store such as FAISS, pgvector, or OpenSearch depending on the stage of the project.
 
 ### High-Level System Flow
 
@@ -82,16 +80,139 @@ flowchart TB
     end
 ```
 
+---
+
+## 4. Embedding Artifacts (Local MVP)
+
+The local embedding step is intentionally backend-agnostic. It reads the canonical chunk artifact and writes:
+
+- a row-major float32 vector artifact,
+- a small JSON metadata artifact, and
+- no index-specific files yet.
+
+Default output paths:
+
+- `data/processed/embeddings/chunk_embeddings.f32`
+- `data/processed/embeddings/chunk_embeddings.metadata.json`
+
+The metadata file records at least:
+
+- source chunks path,
+- embedding model name,
+- vector dimension,
+- row count,
+- snapshot ID when all chunk rows share the same snapshot, and
+- vector artifact path.
+
+This keeps the embedding job reusable by FAISS, pgvector, or any later retrieval backend.
+
+---
+
 ## 5. Repository Structure
+
+```text
+src/supportdoc_rag_chatbot/
+  ingestion/              # Manifest, parse, chunk, validation pipeline
+  retrieval/
+    embeddings/           # Local embedding job + artifact I/O
+  app/                    # Backend orchestration entrypoints (to grow over time)
+  resources/              # Default config and packaged resources
+
+data/
+  manifests/              # Source manifests
+  parsed/                 # Section-level parsed artifacts
+  processed/              # Chunk and embedding artifacts
+
+docs/
+  adr/                    # Architecture decisions
+  data/                   # Corpus and licensing docs
+  diagrams/               # Architecture / ingestion diagrams
+  process/                # Repo workflow and governance docs
+```
+
+---
 
 ## 6. Corpus and Licensing
 
-##  7. Local Development
+The current MVP corpus is a pinned Kubernetes documentation snapshot. Corpus governance, allowlist rules, and licensing decisions are documented in `docs/data/corpus.md` and the ADRs under `docs/adr/`.
 
-##  8. Citations and Refusal Behavior
+---
 
-##  9. Evaluation Plan / Results
+## 7. Local Development
 
-##  10. Deployment Overview
+### Base environment
 
-##  11. Documentation Map / Roadmap
+For normal repo development:
+
+```bash
+uv sync --locked --extra dev-tools
+```
+
+### Embedding job dependencies
+
+For local embedding work, install the optional embedding dependencies too:
+
+```bash
+uv sync --locked --extra dev-tools --extra embeddings-local
+```
+
+### Run the embedding job
+
+After you have `data/processed/chunks.jsonl`, run:
+
+```bash
+uv run python -m supportdoc_rag_chatbot embed-chunks \
+  --input data/processed/chunks.jsonl \
+  --vectors-output data/processed/embeddings/chunk_embeddings.f32 \
+  --metadata-output data/processed/embeddings/chunk_embeddings.metadata.json \
+  --model-name sentence-transformers/all-MiniLM-L6-v2
+```
+
+Useful options:
+
+- `--device cpu|cuda|mps`
+- `--batch-size 32`
+- `--no-normalize`
+
+### Local verification
+
+Run lint and tests:
+
+```bash
+uv run ruff check . --no-fix
+uv run ruff format --check .
+uv run pytest -q
+```
+
+---
+
+## 8. Citations and Refusal Behavior
+
+The target product behavior is to answer only when retrieved evidence is sufficient and attributable. Citation validation and refusal rules are still being layered into the backend pipeline, but the repository structure already separates retrieval, generation, and trust-layer concerns so those checks can be added incrementally.
+
+---
+
+## 9. Evaluation Plan / Results
+
+Evaluation work is planned in two stages:
+
+1. retrieval smoke tests and baseline relevance checks,
+2. end-to-end answer quality, citation support, and refusal correctness.
+
+Results will be documented under the evaluation package and in future project reports as those baselines are implemented.
+
+---
+
+## 10. Deployment Overview
+
+The intended deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The local MVP keeps artifacts simple so the deployment architecture can evolve without rewriting the ingestion or embedding steps.
+
+---
+
+## 11. Documentation Map / Roadmap
+
+- `docs/process/git_workflow.md` — branch / PR / lockfile workflow
+- `docs/data/corpus.md` — corpus scope and licensing notes
+- `docs/diagrams/ingestion_pipeline.md` — ingestion pipeline overview
+- `docs/adr/` — architecture decisions and project rationale
+- `PROPOSAL.md` — project proposal and delivery framing
