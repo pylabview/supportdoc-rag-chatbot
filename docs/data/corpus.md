@@ -126,6 +126,7 @@ Each chunk should include at minimum:
 - `section_path`
 - `start_offset`
 - `end_offset`
+- `token_count`
 
 ### Standard Attribution String
 
