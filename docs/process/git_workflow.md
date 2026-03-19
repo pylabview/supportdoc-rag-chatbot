@@ -479,3 +479,27 @@ A task issue is done when:
 - Use squash merge into `main`.
 
 ---
+
+## 12. Dependency and lockfile workflow
+
+When a task changes `pyproject.toml`, regenerate and commit `uv.lock` in the **same branch and PR**.
+
+### Required commands
+
+```bash
+git switch -c <type>/<issue-number>-short-description
+uv lock
+uv sync --locked --extra dev-tools
+```
+
+If the task depends on local embedding models, use:
+
+```bash
+uv sync --locked --extra dev-tools --extra embeddings-local
+```
+
+### Rule of thumb
+
+- `pyproject.toml` changed -> run `uv lock`
+- lockfile changed -> commit `pyproject.toml` and `uv.lock` together
+- CI should continue using locked installs for reproducibility

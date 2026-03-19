@@ -1,0 +1,110 @@
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+from typing import Sequence
+
+from supportdoc_rag_chatbot.retrieval.embeddings import (
+    DEFAULT_BATCH_SIZE,
+    DEFAULT_CHUNKS_PATH,
+    DEFAULT_DEVICE,
+    DEFAULT_LOCAL_EMBEDDING_MODEL,
+    DEFAULT_METADATA_PATH,
+    DEFAULT_VECTORS_PATH,
+    build_embedding_artifacts,
+    create_local_embedder,
+)
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="supportdoc-rag-chatbot")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    embed_parser = subparsers.add_parser(
+        "embed-chunks",
+        help="Generate local dense embedding artifacts from chunks.jsonl",
+    )
+    embed_parser.add_argument(
+        "--input",
+        type=Path,
+        default=DEFAULT_CHUNKS_PATH,
+        help="Path to chunks.jsonl (default: data/processed/chunks.jsonl)",
+    )
+    embed_parser.add_argument(
+        "--vectors-output",
+        type=Path,
+        default=DEFAULT_VECTORS_PATH,
+        help="Output path for the row-major float32 vector artifact",
+    )
+    embed_parser.add_argument(
+        "--metadata-output",
+        type=Path,
+        default=DEFAULT_METADATA_PATH,
+        help="Output path for the embedding metadata JSON",
+    )
+    embed_parser.add_argument(
+        "--model-name",
+        default=DEFAULT_LOCAL_EMBEDDING_MODEL,
+        help="Local embedding model name or path",
+    )
+    embed_parser.add_argument(
+        "--device",
+        default=DEFAULT_DEVICE,
+        help="Embedding device, for example cpu, cuda, or mps",
+    )
+    embed_parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help="Embedding batch size",
+    )
+    embed_parser.add_argument(
+        "--no-normalize",
+        action="store_true",
+        help="Disable L2 normalization on output vectors",
+    )
+    embed_parser.set_defaults(handler=_run_embed_chunks)
+    return parser
+
+
+def _run_embed_chunks(args: argparse.Namespace) -> int:
+    embedder = create_local_embedder(
+        model_name=args.model_name,
+        device=args.device,
+        batch_size=args.batch_size,
+        normalize_embeddings=not args.no_normalize,
+    )
+    metadata = build_embedding_artifacts(
+        chunks_path=args.input,
+        vectors_path=args.vectors_output,
+        metadata_path=args.metadata_output,
+        embedder=embedder,
+        batch_size=args.batch_size,
+    )
+    print(
+        "Wrote embedding artifacts: "
+        f"rows={metadata.row_count}, dim={metadata.vector_dimension}, "
+        f"vectors={args.vectors_output}, metadata={args.metadata_output}"
+    )
+    return 0
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = build_arg_parser()
+    args = parser.parse_args(argv)
+
+    try:
+        handler = args.handler
+    except AttributeError as exc:  # pragma: no cover - argparse enforces this already
+        raise RuntimeError("No command selected") from exc
+
+    try:
+        return int(handler(args))
+    except (FileNotFoundError, RuntimeError, ValueError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())
