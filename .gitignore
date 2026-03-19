@@ -216,3 +216,5 @@ __marimo__/
 .Trashes
 # Generated retrieval artifacts
 data/processed/embeddings/
+
+data/processed/indexes/

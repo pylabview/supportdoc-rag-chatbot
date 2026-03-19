@@ -15,6 +15,12 @@ from supportdoc_rag_chatbot.retrieval.embeddings import (
     build_embedding_artifacts,
     create_local_embedder,
 )
+from supportdoc_rag_chatbot.retrieval.indexes import (
+    DEFAULT_FAISS_INDEX_PATH,
+    DEFAULT_FAISS_METADATA_PATH,
+    DEFAULT_FAISS_ROW_MAPPING_PATH,
+    build_faiss_index_artifacts,
+)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -65,6 +71,37 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Disable L2 normalization on output vectors",
     )
     embed_parser.set_defaults(handler=_run_embed_chunks)
+
+    index_parser = subparsers.add_parser(
+        "build-faiss-index",
+        help="Build and persist a local FAISS index from saved embedding artifacts",
+    )
+    index_parser.add_argument(
+        "--embedding-metadata",
+        type=Path,
+        default=DEFAULT_METADATA_PATH,
+        help="Path to the embedding metadata JSON produced by embed-chunks",
+    )
+    index_parser.add_argument(
+        "--index-output",
+        type=Path,
+        default=DEFAULT_FAISS_INDEX_PATH,
+        help="Output path for the persisted FAISS index file",
+    )
+    index_parser.add_argument(
+        "--index-metadata-output",
+        type=Path,
+        default=DEFAULT_FAISS_METADATA_PATH,
+        help="Output path for the FAISS index metadata JSON",
+    )
+    index_parser.add_argument(
+        "--row-mapping-output",
+        type=Path,
+        default=DEFAULT_FAISS_ROW_MAPPING_PATH,
+        help="Output path for the row-to-chunk-id mapping JSON",
+    )
+    index_parser.set_defaults(handler=_run_build_faiss_index)
+
     return parser
 
 
@@ -86,6 +123,22 @@ def _run_embed_chunks(args: argparse.Namespace) -> int:
         "Wrote embedding artifacts: "
         f"rows={metadata.row_count}, dim={metadata.vector_dimension}, "
         f"vectors={args.vectors_output}, metadata={args.metadata_output}"
+    )
+    return 0
+
+
+def _run_build_faiss_index(args: argparse.Namespace) -> int:
+    metadata = build_faiss_index_artifacts(
+        embedding_metadata_path=args.embedding_metadata,
+        index_path=args.index_output,
+        metadata_path=args.index_metadata_output,
+        row_mapping_path=args.row_mapping_output,
+    )
+    print(
+        "Wrote FAISS index artifacts: "
+        f"rows={metadata.row_count}, dim={metadata.vector_dimension}, "
+        f"index={args.index_output}, metadata={args.index_metadata_output}, "
+        f"row-mapping={args.row_mapping_output}"
     )
     return 0
 

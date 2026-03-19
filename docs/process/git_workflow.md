@@ -288,17 +288,32 @@ Before committing, run the local quality gates so your branch matches the reposi
 Recommended commands:
 
 ```bash
-uv sync
+uv sync --locked --extra dev-tools
 uv run pre-commit run --all-files
 uv run pytest -q
 ```
 
 Notes:
 
-- `uv sync` ensures the local environment matches the project lockfile.
+- `uv sync --locked --extra dev-tools` ensures the local environment matches the committed lockfile and the default development toolchain.
 - `uv run pre-commit run --all-files` runs the configured formatting and lint hooks consistently.
 - `uv run pytest -q` runs the test suite inside the project environment.
 - If `pre-commit` modifies files, stage them again with `git add ...` before committing.
+
+
+### Optional extras for task-specific work
+
+Some task issues require optional dependency groups beyond the default development tools. Install the extras needed by the task on your feature branch and document them in the PR when they affect local workflow or CI.
+
+Examples:
+
+```bash
+uv sync --locked --extra dev-tools --extra embeddings-local
+uv sync --locked --extra dev-tools --extra faiss
+uv sync --locked --extra dev-tools --extra embeddings-local --extra faiss
+```
+
+If a new task requires CI to exercise an optional backend, update the relevant GitHub Actions workflow in the same PR instead of assuming the default `dev-tools` environment is enough.
 
 ### Step 4: commit
 
@@ -384,7 +399,7 @@ git switch -c feat/10-repo-skeleton
 Work locally, then run the repository checks:
 
 ```bash
-uv sync
+uv sync --locked --extra dev-tools
 uv run pre-commit run --all-files
 uv run pytest -q
 ```
