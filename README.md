@@ -13,7 +13,7 @@ The initial corpus is a pinned snapshot of Kubernetes documentation so the proje
 This README is maintained as a live project document and evolves with each completed task issue.
 
 ### Current Phase
-Embeddings + local vector artifact groundwork.
+Local dense retrieval baseline.
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
@@ -21,17 +21,17 @@ Embeddings + local vector artifact groundwork.
 - Ingestion pipeline artifacts for manifest generation, parsing, section extraction, chunking, and validation.
 - Stable `chunks.jsonl` artifact with chunk-level provenance metadata.
 - Local embedding job that converts `data/processed/chunks.jsonl` into deterministic dense-vector artifacts for downstream index construction.
+- Local FAISS backend that builds, persists, reloads, and searches a dense index over saved embedding artifacts.
 
 ### In Progress
-- Local vector-index backend for MVP dense retrieval.
 - Retrieval smoke test CLI.
 - Citation contract and refusal behavior integration.
 
 ### Next Up
-- Build the first local index backend over persisted embedding artifacts.
 - Add dense retrieval smoke tests and baseline retrieval evaluation.
 - Connect retrieval outputs to generation and citation validation.
 - Expand deployment and observability documentation as the backend/API layer matures.
+- Add alternative retrieval backends behind the same interface as the project moves beyond the local MVP.
 
 ---
 
@@ -108,6 +108,33 @@ This keeps the embedding job reusable by FAISS, pgvector, or any later retrieval
 
 ---
 
+
+## 4A. Local FAISS Index Artifacts (MVP)
+
+The first dense retrieval backend uses FAISS with a flat inner-product index. For cosine-similarity-compatible retrieval, the backend L2-normalizes database vectors before adding them to `IndexFlatIP`, then normalizes query vectors before search.
+
+Default output paths:
+
+- `data/processed/indexes/faiss/chunk_index.faiss`
+- `data/processed/indexes/faiss/chunk_index.metadata.json`
+- `data/processed/indexes/faiss/chunk_index.row_mapping.json`
+
+The metadata sidecar records at least:
+
+- backend name,
+- metric,
+- embedding model name,
+- vector dimension,
+- row count,
+- source chunks path,
+- embedding metadata path,
+- vector artifact path, and
+- snapshot ID when available.
+
+The row-mapping artifact stores the chunk IDs in row order so the FAISS index can stay focused on vector search while chunk provenance remains in the original `chunks.jsonl` artifact.
+
+---
+
 ## 5. Repository Structure
 
 ```text
@@ -115,13 +142,14 @@ src/supportdoc_rag_chatbot/
   ingestion/              # Manifest, parse, chunk, validation pipeline
   retrieval/
     embeddings/           # Local embedding job + artifact I/O
+    indexes/              # Dense index interfaces + local FAISS backend
   app/                    # Backend orchestration entrypoints (to grow over time)
   resources/              # Default config and packaged resources
 
 data/
   manifests/              # Source manifests
   parsed/                 # Section-level parsed artifacts
-  processed/              # Chunk and embedding artifacts
+  processed/              # Chunk, embedding, and index artifacts
 
 docs/
   adr/                    # Architecture decisions
@@ -156,6 +184,20 @@ For local embedding work, install the optional embedding dependencies too:
 uv sync --locked --extra dev-tools --extra embeddings-local
 ```
 
+### FAISS index dependencies
+
+For local FAISS index work, install the FAISS extra:
+
+```bash
+uv sync --locked --extra dev-tools --extra faiss
+```
+
+If you want to run both the local embedding job and the local FAISS backend on the same machine, install both extras together:
+
+```bash
+uv sync --locked --extra dev-tools --extra embeddings-local --extra faiss
+```
+
 ### Run the embedding job
 
 After you have `data/processed/chunks.jsonl`, run:
@@ -173,6 +215,31 @@ Useful options:
 - `--device cpu|cuda|mps`
 - `--batch-size 32`
 - `--no-normalize`
+
+### Build the local FAISS index
+
+After the embedding artifacts exist, build the persisted FAISS index:
+
+```bash
+uv run python -m supportdoc_rag_chatbot build-faiss-index \
+  --embedding-metadata data/processed/embeddings/chunk_embeddings.metadata.json \
+  --index-output data/processed/indexes/faiss/chunk_index.faiss \
+  --index-metadata-output data/processed/indexes/faiss/chunk_index.metadata.json \
+  --row-mapping-output data/processed/indexes/faiss/chunk_index.row_mapping.json
+```
+
+### Load the saved FAISS backend from Python
+
+```python
+from pathlib import Path
+
+from supportdoc_rag_chatbot.retrieval.indexes import load_faiss_index_backend
+
+backend = load_faiss_index_backend(
+    index_path=Path("data/processed/indexes/faiss/chunk_index.faiss"),
+    metadata_path=Path("data/processed/indexes/faiss/chunk_index.metadata.json"),
+)
+```
 
 ### Local verification
 
