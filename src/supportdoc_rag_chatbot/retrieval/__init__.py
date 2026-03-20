@@ -27,6 +27,14 @@ from .indexes import (
     read_chunk_row_mapping,
     read_index_metadata,
 )
+from .smoke import (
+    DEFAULT_PREVIEW_CHARS,
+    DEFAULT_RETRIEVAL_TOP_K,
+    DenseRetrievalSmokeMatch,
+    DenseRetrievalSmokeReport,
+    render_dense_retrieval_smoke_report,
+    run_dense_retrieval_smoke,
+)
 
 __all__ = [
     "DEFAULT_BATCH_SIZE",
@@ -38,10 +46,14 @@ __all__ = [
     "DEFAULT_FAISS_ROW_MAPPING_PATH",
     "DEFAULT_LOCAL_EMBEDDING_MODEL",
     "DEFAULT_METADATA_PATH",
+    "DEFAULT_PREVIEW_CHARS",
+    "DEFAULT_RETRIEVAL_TOP_K",
     "DEFAULT_VECTORS_PATH",
     "ChunkRowMapping",
     "DenseIndexMetadata",
     "DenseRetrievalBackend",
+    "DenseRetrievalSmokeMatch",
+    "DenseRetrievalSmokeReport",
     "DenseSearchResult",
     "EmbeddingMetadata",
     "FaissDenseIndexBackend",
@@ -54,4 +66,6 @@ __all__ = [
     "read_embedding_metadata",
     "read_index_metadata",
     "read_vector_rows",
+    "render_dense_retrieval_smoke_report",
+    "run_dense_retrieval_smoke",
 ]

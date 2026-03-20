@@ -21,6 +21,12 @@ from supportdoc_rag_chatbot.retrieval.indexes import (
     DEFAULT_FAISS_ROW_MAPPING_PATH,
     build_faiss_index_artifacts,
 )
+from supportdoc_rag_chatbot.retrieval.smoke import (
+    DEFAULT_PREVIEW_CHARS,
+    DEFAULT_RETRIEVAL_TOP_K,
+    render_dense_retrieval_smoke_report,
+    run_dense_retrieval_smoke,
+)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -102,6 +108,71 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     index_parser.set_defaults(handler=_run_build_faiss_index)
 
+    smoke_parser = subparsers.add_parser(
+        "smoke-dense-retrieval",
+        help="Run a local dense-retrieval smoke test over the saved FAISS index",
+    )
+    smoke_parser.add_argument(
+        "--query",
+        required=True,
+        help="Query text to embed and search",
+    )
+    smoke_parser.add_argument(
+        "--top-k",
+        type=int,
+        default=DEFAULT_RETRIEVAL_TOP_K,
+        help="Number of top matches to print",
+    )
+    smoke_parser.add_argument(
+        "--index",
+        type=Path,
+        default=DEFAULT_FAISS_INDEX_PATH,
+        help="Path to the persisted FAISS index file",
+    )
+    smoke_parser.add_argument(
+        "--index-metadata",
+        type=Path,
+        default=DEFAULT_FAISS_METADATA_PATH,
+        help="Path to the FAISS index metadata JSON",
+    )
+    smoke_parser.add_argument(
+        "--row-mapping",
+        type=Path,
+        default=None,
+        help="Optional path to the row-to-chunk-id mapping JSON (defaults to the metadata sidecar)",
+    )
+    smoke_parser.add_argument(
+        "--chunks",
+        type=Path,
+        default=None,
+        help=(
+            "Optional path to chunks.jsonl (defaults to the source path recorded in index metadata)"
+        ),
+    )
+    smoke_parser.add_argument(
+        "--model-name",
+        default=None,
+        help="Optional embedding model override (defaults to the model recorded in index metadata)",
+    )
+    smoke_parser.add_argument(
+        "--device",
+        default=DEFAULT_DEVICE,
+        help="Embedding device, for example cpu, cuda, or mps",
+    )
+    smoke_parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help="Embedding batch size for the single-query embedder",
+    )
+    smoke_parser.add_argument(
+        "--preview-chars",
+        type=int,
+        default=DEFAULT_PREVIEW_CHARS,
+        help="Maximum number of characters to print from each chunk preview",
+    )
+    smoke_parser.set_defaults(handler=_run_smoke_dense_retrieval)
+
     return parser
 
 
@@ -140,6 +211,23 @@ def _run_build_faiss_index(args: argparse.Namespace) -> int:
         f"index={args.index_output}, metadata={args.index_metadata_output}, "
         f"row-mapping={args.row_mapping_output}"
     )
+    return 0
+
+
+def _run_smoke_dense_retrieval(args: argparse.Namespace) -> int:
+    report = run_dense_retrieval_smoke(
+        query_text=args.query,
+        top_k=args.top_k,
+        index_path=args.index,
+        index_metadata_path=args.index_metadata,
+        row_mapping_path=args.row_mapping,
+        chunks_path=args.chunks,
+        model_name=args.model_name,
+        device=args.device,
+        batch_size=args.batch_size,
+        preview_chars=args.preview_chars,
+    )
+    print(render_dense_retrieval_smoke_report(report))
     return 0
 
 

@@ -22,9 +22,9 @@ Local dense retrieval baseline.
 - Stable `chunks.jsonl` artifact with chunk-level provenance metadata.
 - Local embedding job that converts `data/processed/chunks.jsonl` into deterministic dense-vector artifacts for downstream index construction.
 - Local FAISS backend that builds, persists, reloads, and searches a dense index over saved embedding artifacts.
+- Developer-facing retrieval smoke CLI for local dense search over a saved FAISS index.
 
 ### In Progress
-- Retrieval smoke test CLI.
 - Citation contract and refusal behavior integration.
 
 ### Next Up
@@ -143,6 +143,7 @@ src/supportdoc_rag_chatbot/
   retrieval/
     embeddings/           # Local embedding job + artifact I/O
     indexes/              # Dense index interfaces + local FAISS backend
+    smoke.py              # Developer-facing dense retrieval smoke helpers
   app/                    # Backend orchestration entrypoints (to grow over time)
   resources/              # Default config and packaged resources
 
@@ -240,6 +241,33 @@ backend = load_faiss_index_backend(
     metadata_path=Path("data/processed/indexes/faiss/chunk_index.metadata.json"),
 )
 ```
+
+### Run a local dense-retrieval smoke test
+
+After the FAISS index exists, run a query end to end:
+
+```bash
+uv run python -m supportdoc_rag_chatbot smoke-dense-retrieval \
+  --query "what is a pod" \
+  --top-k 3 \
+  --index data/processed/indexes/faiss/chunk_index.faiss \
+  --index-metadata data/processed/indexes/faiss/chunk_index.metadata.json
+```
+
+By default, the smoke command:
+
+- loads the embedding model recorded in the FAISS index metadata,
+- uses the row-mapping path recorded in the index metadata,
+- uses the source `chunks.jsonl` path recorded in the index metadata, and
+- prints rank, score, chunk ID, section path, source URL, and a short text preview.
+
+Useful options:
+
+- `--row-mapping data/processed/indexes/faiss/chunk_index.row_mapping.json`
+- `--chunks data/processed/chunks.jsonl`
+- `--model-name sentence-transformers/all-MiniLM-L6-v2`
+- `--device cpu|cuda|mps`
+- `--preview-chars 200`
 
 ### Local verification
 
