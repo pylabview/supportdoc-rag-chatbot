@@ -296,6 +296,12 @@ Evaluation work is planned in two stages:
 
 Results will be documented under the evaluation package and in future project reports as those baselines are implemented.
 
+## 9A. Development Retrieval QA Set
+
+A small versioned development QA set now lives under `data/evaluation/` for retrieval-only baseline work. The current committed dataset targets snapshot `k8s-9e1e32b` from `data/manifests/source_manifest.jsonl` and includes answerable plus intentionally unanswerable questions, along with expected section/chunk evidence IDs for retrieval checks.
+
+The evaluation helpers in `src/supportdoc_rag_chatbot/evaluation/dev_qa.py` can load the dataset, load the companion metadata/registry files, and validate that every annotated evidence ID belongs to the same snapshot. See `docs/process/retrieval_dev_qa.md` for the schema, annotation rules, and validation workflow.
+
 ---
 
 ## 10. Deployment Overview
