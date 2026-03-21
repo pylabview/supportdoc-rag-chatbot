@@ -1,0 +1,17 @@
+{
+  "dataset_name": "dev_qa_retrieval_baselines",
+  "dataset_version": "v1",
+  "snapshot_id": "k8s-9e1e32b",
+  "source_manifest_path": "data/manifests/source_manifest.jsonl",
+  "artifact_path": "data/evaluation/dev_qa.k8s-9e1e32b.v1.jsonl",
+  "registry_path": "data/evaluation/dev_qa.k8s-9e1e32b.v1.registry.json",
+  "row_count": 12,
+  "doc_count": 2,
+  "section_id_count": 56,
+  "chunk_id_count": 67,
+  "default_chunking": {
+    "max_tokens": 350,
+    "overlap_tokens": 50
+  },
+  "notes": "Versioned development QA set for retrieval-only baselines over the current committed Kubernetes source manifest."
+}
