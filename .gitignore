@@ -218,3 +218,7 @@ __marimo__/
 data/processed/embeddings/
 
 data/processed/indexes/
+
+# Local evaluation artifacts
+data/evaluation/runs/
+tmp/eval/
