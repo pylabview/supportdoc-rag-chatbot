@@ -51,8 +51,7 @@ class RetrievalQueryArtifact:
             latency_ms=float(payload["latency_ms"]),
             expected_chunk_ids=[str(item) for item in payload.get("expected_chunk_ids", [])],
             matches=[
-                RetrievedChunkArtifact.from_dict(match)
-                for match in payload.get("matches", [])
+                RetrievedChunkArtifact.from_dict(match) for match in payload.get("matches", [])
             ],
             retriever_config=dict(payload.get("retriever_config", {})),
         )
@@ -113,13 +112,11 @@ class RetrievalRunArtifacts:
     summary: RetrievalSummaryArtifact
 
 
-
 def write_retrieval_results(path: Path, results: Iterable[RetrievalQueryArtifact]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         for row in results:
             handle.write(json.dumps(row.to_dict(), sort_keys=True) + "\n")
-
 
 
 def read_retrieval_results(path: Path) -> list[RetrievalQueryArtifact]:
@@ -141,14 +138,12 @@ def read_retrieval_results(path: Path) -> list[RetrievalQueryArtifact]:
     return rows
 
 
-
 def write_retrieval_summary(path: Path, summary: RetrievalSummaryArtifact) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(summary.to_dict(), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-
 
 
 def read_retrieval_summary(path: Path) -> RetrievalSummaryArtifact:

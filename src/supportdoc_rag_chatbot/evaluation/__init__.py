@@ -8,6 +8,16 @@ from .artifacts import (
     write_retrieval_results,
     write_retrieval_summary,
 )
+from .bm25_baseline import (
+    DEFAULT_BM25_B,
+    DEFAULT_BM25_BASELINE_LABEL,
+    DEFAULT_BM25_BASELINE_TOP_K,
+    DEFAULT_BM25_K1,
+    BM25BaselineConfig,
+    BM25BaselineRetriever,
+    render_bm25_baseline_report,
+    run_bm25_baseline,
+)
 from .dense_baseline import (
     DEFAULT_DENSE_BASELINE_LABEL,
     DEFAULT_DENSE_BASELINE_TOP_K,
@@ -68,6 +78,14 @@ from .retrievers import (
 )
 
 __all__ = [
+    "BM25BaselineConfig",
+    "BM25BaselineRetriever",
+    "DEFAULT_BM25_B",
+    "DEFAULT_BM25_BASELINE_LABEL",
+    "DEFAULT_BM25_BASELINE_TOP_K",
+    "DEFAULT_BM25_K1",
+    "render_bm25_baseline_report",
+    "run_bm25_baseline",
     "write_retrieval_summary",
     "write_retrieval_results",
     "run_dense_baseline",

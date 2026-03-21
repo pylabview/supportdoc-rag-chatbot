@@ -83,7 +83,8 @@ class DenseBaselineRetriever:
             normalize_embeddings=True,
         )
         self.chunk_info_by_id = {
-            chunk.chunk_id: chunk for chunk in load_chunk_records(Path(index_metadata.source_chunks_path))
+            chunk.chunk_id: chunk
+            for chunk in load_chunk_records(Path(index_metadata.source_chunks_path))
         }
         self.config = {
             "embedding_model_name": self.model_name,
@@ -192,7 +193,6 @@ def run_dense_baseline(config: DenseBaselineConfig | None = None) -> RetrievalRu
     return RetrievalRunArtifacts(results=result_artifacts, summary=summary_artifact)
 
 
-
 def render_dense_baseline_report(run: RetrievalRunArtifacts) -> str:
     summary = run.summary
     config = summary.retriever_config
@@ -217,7 +217,6 @@ def render_dense_baseline_report(run: RetrievalRunArtifacts) -> str:
     return "\n".join(lines)
 
 
-
 def _load_dataset_surface(
     config: DenseBaselineConfig,
 ) -> tuple[list[DevQAEntry], DevQAMetadata]:
@@ -232,7 +231,6 @@ def _load_dataset_surface(
         dataset_metadata = load_dev_qa_metadata(config.dataset_metadata_path)
 
     return dataset_entries, dataset_metadata
-
 
 
 def _load_registry_surface(
@@ -260,29 +258,30 @@ def _load_registry_surface(
         {section_id for entry in entries for section_id in entry.expected_section_ids}
     )
     chunk_ids = sorted({chunk.chunk_id for chunk in chunks})
-    entry_chunk_ids = sorted({chunk_id for entry in entries for chunk_id in entry.expected_chunk_ids})
+    entry_chunk_ids = sorted(
+        {chunk_id for entry in entries for chunk_id in entry.expected_chunk_ids}
+    )
 
     return EvidenceRegistry(
         snapshot_id=metadata.snapshot_id,
         source_manifest_path=metadata.source_manifest_path,
-        doc_ids=_select_ids(expected_count=metadata.doc_count, primary=entry_doc_ids, fallback=chunk_doc_ids),
+        doc_ids=_select_ids(
+            expected_count=metadata.doc_count, primary=entry_doc_ids, fallback=chunk_doc_ids
+        ),
         section_ids=_select_ids(
             expected_count=metadata.section_id_count,
             primary=entry_section_ids,
             fallback=chunk_section_ids,
         ),
-        chunk_ids=_select_ids(expected_count=metadata.chunk_id_count, primary=chunk_ids, fallback=entry_chunk_ids),
+        chunk_ids=_select_ids(
+            expected_count=metadata.chunk_id_count, primary=chunk_ids, fallback=entry_chunk_ids
+        ),
         default_chunking=dict(metadata.default_chunking),
     )
 
 
-
 def _default_run_name(*, metadata: DevQAMetadata, top_k: int, label: str) -> str:
-    return (
-        f"dense-{metadata.snapshot_id}-{metadata.dataset_version}-"
-        f"top{top_k}-{label}"
-    )
-
+    return f"dense-{metadata.snapshot_id}-{metadata.dataset_version}-top{top_k}-{label}"
 
 
 def _resolve_output_paths(
@@ -308,7 +307,6 @@ def _resolve_output_paths(
         repo_root / "data" / "evaluation" / "runs" / f"{run_name}.summary.json"
     )
     return results_output_path, summary_output_path
-
 
 
 def _select_ids(*, expected_count: int, primary: list[str], fallback: list[str]) -> list[str]:

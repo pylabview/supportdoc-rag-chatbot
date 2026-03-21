@@ -6,9 +6,14 @@ from pathlib import Path
 from typing import Sequence
 
 from supportdoc_rag_chatbot.evaluation import (
+    DEFAULT_BM25_B,
+    DEFAULT_BM25_BASELINE_LABEL,
+    DEFAULT_BM25_BASELINE_TOP_K,
+    DEFAULT_BM25_K1,
     DEFAULT_EVAL_TOP_K,
     DEFAULT_HYBRID_CANDIDATE_DEPTH,
     DEFAULT_RRF_K,
+    BM25BaselineConfig,
     BM25ChunkEvaluationRetriever,
     DenseBaselineConfig,
     DenseFaissEvaluationRetriever,
@@ -20,8 +25,10 @@ from supportdoc_rag_chatbot.evaluation import (
     load_dev_qa_dataset,
     load_dev_qa_metadata,
     load_evidence_registry,
+    render_bm25_baseline_report,
     render_dense_baseline_report,
     render_retrieval_evaluation_report,
+    run_bm25_baseline,
     run_dense_baseline,
     write_query_results,
     write_retrieval_run_summary,
@@ -313,6 +320,76 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     eval_parser.set_defaults(handler=_run_evaluate_retrieval)
 
+    bm25_baseline_parser = subparsers.add_parser(
+        "run-bm25-baseline",
+        help="Run the BM25 retrieval baseline over the dev QA set and write deterministic artifacts",
+    )
+    bm25_baseline_parser.add_argument(
+        "--dataset",
+        type=Path,
+        default=None,
+        help="Optional path to a dev QA dataset JSONL (defaults to committed dataset)",
+    )
+    bm25_baseline_parser.add_argument(
+        "--dataset-metadata",
+        type=Path,
+        default=None,
+        help="Optional path to dev QA metadata JSON (defaults to committed metadata)",
+    )
+    bm25_baseline_parser.add_argument(
+        "--registry",
+        type=Path,
+        default=None,
+        help="Optional path to an evidence registry JSON (defaults to committed registry or derives from chunks)",
+    )
+    bm25_baseline_parser.add_argument(
+        "--chunks",
+        type=Path,
+        default=DEFAULT_CHUNKS_PATH,
+        help="Path to chunks.jsonl used as the canonical BM25 corpus",
+    )
+    bm25_baseline_parser.add_argument(
+        "--k1",
+        type=float,
+        default=DEFAULT_BM25_K1,
+        help="BM25 term-frequency saturation constant",
+    )
+    bm25_baseline_parser.add_argument(
+        "--b",
+        type=float,
+        default=DEFAULT_BM25_B,
+        help="BM25 length normalization constant",
+    )
+    bm25_baseline_parser.add_argument(
+        "--top-k",
+        type=int,
+        default=DEFAULT_BM25_BASELINE_TOP_K,
+        help="Number of ranked hits to keep per query",
+    )
+    bm25_baseline_parser.add_argument(
+        "--run-name",
+        default=None,
+        help="Optional run name override for output artifact naming",
+    )
+    bm25_baseline_parser.add_argument(
+        "--run-label",
+        default=DEFAULT_BM25_BASELINE_LABEL,
+        help="Logical label appended to the default BM25 run name",
+    )
+    bm25_baseline_parser.add_argument(
+        "--results-output",
+        type=Path,
+        default=None,
+        help="Optional output path for the per-query retrieval results JSONL",
+    )
+    bm25_baseline_parser.add_argument(
+        "--summary-output",
+        type=Path,
+        default=None,
+        help="Optional output path for the summary metrics JSON",
+    )
+    bm25_baseline_parser.set_defaults(handler=_run_bm25_baseline)
+
     dense_baseline_parser = subparsers.add_parser(
         "run-dense-baseline",
         help="Run the dense retrieval baseline over the dev QA set and write deterministic artifacts",
@@ -454,6 +531,26 @@ def _run_smoke_dense_retrieval(args: argparse.Namespace) -> int:
         preview_chars=args.preview_chars,
     )
     print(render_dense_retrieval_smoke_report(report))
+    return 0
+
+
+def _run_bm25_baseline(args: argparse.Namespace) -> int:
+    run = run_bm25_baseline(
+        config=BM25BaselineConfig(
+            chunks_path=args.chunks,
+            dataset_path=args.dataset,
+            dataset_metadata_path=args.dataset_metadata,
+            registry_path=args.registry,
+            k1=args.k1,
+            b=args.b,
+            top_k=args.top_k,
+            run_name=args.run_name,
+            run_label=args.run_label,
+            results_output_path=args.results_output,
+            summary_output_path=args.summary_output,
+        )
+    )
+    print(render_bm25_baseline_report(run))
     return 0
 
 
