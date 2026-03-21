@@ -67,6 +67,14 @@ from .harness import (
     write_query_results,
     write_retrieval_run_summary,
 )
+from .hybrid_baseline import (
+    DEFAULT_HYBRID_BASELINE_LABEL,
+    DEFAULT_HYBRID_BASELINE_TOP_K,
+    HybridBaselineConfig,
+    HybridBaselineRetriever,
+    render_hybrid_baseline_report,
+    run_hybrid_baseline,
+)
 from .retrievers import (
     DEFAULT_HYBRID_CANDIDATE_DEPTH,
     DEFAULT_RRF_K,
@@ -100,6 +108,12 @@ __all__ = [
     "DenseBaselineConfig",
     "DEFAULT_DENSE_BASELINE_TOP_K",
     "DEFAULT_DENSE_BASELINE_LABEL",
+    "HybridBaselineRetriever",
+    "HybridBaselineConfig",
+    "DEFAULT_HYBRID_BASELINE_TOP_K",
+    "DEFAULT_HYBRID_BASELINE_LABEL",
+    "render_hybrid_baseline_report",
+    "run_hybrid_baseline",
     "DEFAULT_DATASET_FILENAME",
     "DEFAULT_DATASET_VERSION",
     "DEFAULT_EVAL_TOP_K",
