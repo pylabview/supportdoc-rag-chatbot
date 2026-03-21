@@ -159,6 +159,7 @@ class BM25ChunkEvaluationRetriever:
             "chunks_path": str(self.chunks_path),
             "k1": self.k1,
             "b": self.b,
+            "tokenization": f"lowercase regex: {_TOKEN_PATTERN.pattern}",
         }
 
     def retrieve(self, entry: DevQAEntry, *, top_k: int) -> list[RetrievalHit]:

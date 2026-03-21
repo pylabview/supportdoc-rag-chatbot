@@ -13,7 +13,7 @@ The initial corpus is a pinned snapshot of Kubernetes documentation so the proje
 This README is maintained as a live project document and evolves with each completed task issue.
 
 ### Current Phase
-Dense retrieval baseline evaluation.
+Dense and BM25 retrieval baseline evaluation.
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
@@ -23,13 +23,13 @@ Dense retrieval baseline evaluation.
 - Local embedding job that converts `data/processed/chunks.jsonl` into deterministic dense-vector artifacts for downstream index construction.
 - Local FAISS backend that builds, persists, reloads, and searches a dense index over saved embedding artifacts.
 - Developer-facing retrieval smoke CLI for local dense search over a saved FAISS index.
-- Shared retrieval evaluation harness and dense baseline runner that execute the committed Dev QA set and write deterministic result artifacts.
+- Shared retrieval evaluation harness plus dense and BM25 baseline runners that execute the committed Dev QA set and write deterministic result artifacts.
 
 ### In Progress
 - Citation contract and refusal behavior integration.
 
 ### Next Up
-- Add BM25 and hybrid retrievers behind the same evaluation harness.
+- Add hybrid retrieval behind the same evaluation harness.
 - Connect retrieval outputs to generation and citation validation.
 - Expand deployment and observability documentation as the backend/API layer matures.
 - Compare dense, BM25, and hybrid retrieval artifacts to choose the default baseline.
@@ -324,6 +324,23 @@ The dense run writes:
 
 See `docs/process/dense_retrieval_baseline.md` for the exact baseline configuration and output layout.
 
+## 9C. BM25 Retrieval Baseline Evaluation
+
+The repository now includes a BM25 baseline runner over the canonical `chunks.jsonl` artifact. The BM25 baseline tokenizes queries and chunks with a lowercase regex tokenizer, scores chunks with deterministic BM25 ranking, and writes deterministic artifacts under `data/evaluation/runs/` by default.
+
+Default BM25 baseline command:
+
+```bash
+uv run python -m supportdoc_rag_chatbot run-bm25-baseline   --chunks data/processed/chunks.jsonl   --top-k 5
+```
+
+The BM25 run writes:
+
+- a per-query results JSONL artifact
+- a summary JSON artifact with hit@k, recall@k, MRR, and latency
+
+See `docs/process/bm25_retrieval_baseline.md` for the tokenization strategy, exact baseline configuration, and output layout.
+
 ---
 
 ## 10. Deployment Overview
@@ -339,4 +356,5 @@ The intended deployment path is a FastAPI backend with a web frontend, persisten
 - `docs/diagrams/ingestion_pipeline.md` — ingestion pipeline overview
 - `docs/adr/` — architecture decisions and project rationale
 - `docs/process/dense_retrieval_baseline.md` — default dense baseline config and run command
+- `docs/process/bm25_retrieval_baseline.md` — default BM25 baseline config and run command
 - `PROPOSAL.md` — project proposal and delivery framing

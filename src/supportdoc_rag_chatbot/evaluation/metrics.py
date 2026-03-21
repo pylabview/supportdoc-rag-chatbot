@@ -18,7 +18,6 @@ class RetrievalMetrics:
     max_latency_ms: float
 
 
-
 def compute_retrieval_metrics(results: Iterable[RetrievalQueryArtifact]) -> RetrievalMetrics:
     rows = list(results)
     query_count = len(rows)
