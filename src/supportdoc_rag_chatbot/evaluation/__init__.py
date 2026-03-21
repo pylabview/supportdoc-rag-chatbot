@@ -1,3 +1,21 @@
+from .artifacts import (
+    RetrievalQueryArtifact,
+    RetrievalRunArtifacts,
+    RetrievalSummaryArtifact,
+    RetrievedChunkArtifact,
+    read_retrieval_results,
+    read_retrieval_summary,
+    write_retrieval_results,
+    write_retrieval_summary,
+)
+from .dense_baseline import (
+    DEFAULT_DENSE_BASELINE_LABEL,
+    DEFAULT_DENSE_BASELINE_TOP_K,
+    DenseBaselineConfig,
+    DenseBaselineRetriever,
+    render_dense_baseline_report,
+    run_dense_baseline,
+)
 from .dev_qa import (
     DEFAULT_DATASET_FILENAME,
     DEFAULT_DATASET_VERSION,
@@ -50,6 +68,20 @@ from .retrievers import (
 )
 
 __all__ = [
+    "write_retrieval_summary",
+    "write_retrieval_results",
+    "run_dense_baseline",
+    "render_dense_baseline_report",
+    "read_retrieval_summary",
+    "read_retrieval_results",
+    "RetrievedChunkArtifact",
+    "RetrievalSummaryArtifact",
+    "RetrievalRunArtifacts",
+    "RetrievalQueryArtifact",
+    "DenseBaselineRetriever",
+    "DenseBaselineConfig",
+    "DEFAULT_DENSE_BASELINE_TOP_K",
+    "DEFAULT_DENSE_BASELINE_LABEL",
     "DEFAULT_DATASET_FILENAME",
     "DEFAULT_DATASET_VERSION",
     "DEFAULT_EVAL_TOP_K",

@@ -219,6 +219,6 @@ data/processed/embeddings/
 
 data/processed/indexes/
 
-# Local evaluation artifacts
+# Local retrieval evaluation outputs
 data/evaluation/runs/
 tmp/eval/
