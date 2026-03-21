@@ -13,7 +13,7 @@ The initial corpus is a pinned snapshot of Kubernetes documentation so the proje
 This README is maintained as a live project document and evolves with each completed task issue.
 
 ### Current Phase
-Local dense retrieval baseline.
+Retrieval baseline evaluation harness.
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
@@ -23,15 +23,17 @@ Local dense retrieval baseline.
 - Local embedding job that converts `data/processed/chunks.jsonl` into deterministic dense-vector artifacts for downstream index construction.
 - Local FAISS backend that builds, persists, reloads, and searches a dense index over saved embedding artifacts.
 - Developer-facing retrieval smoke CLI for local dense search over a saved FAISS index.
+- Versioned Dev QA retrieval dataset tied to the current Kubernetes snapshot.
+- Retrieval evaluation harness that writes deterministic per-query and summary artifacts.
 
 ### In Progress
 - Citation contract and refusal behavior integration.
 
 ### Next Up
-- Add dense retrieval smoke tests and baseline retrieval evaluation.
+- Run dense, BM25, and hybrid baselines through the shared evaluation harness.
+- Write retrieval comparison notes and choose the default retrieval configuration for the next stage.
 - Connect retrieval outputs to generation and citation validation.
 - Expand deployment and observability documentation as the backend/API layer matures.
-- Add alternative retrieval backends behind the same interface as the project moves beyond the local MVP.
 
 ---
 
@@ -139,6 +141,7 @@ The row-mapping artifact stores the chunk IDs in row order so the FAISS index ca
 
 ```text
 src/supportdoc_rag_chatbot/
+  evaluation/             # Dev QA loaders, retrievers, and evaluation harness
   ingestion/              # Manifest, parse, chunk, validation pipeline
   retrieval/
     embeddings/           # Local embedding job + artifact I/O
@@ -148,6 +151,7 @@ src/supportdoc_rag_chatbot/
   resources/              # Default config and packaged resources
 
 data/
+  evaluation/             # Versioned dev QA sets and local evaluation runs
   manifests/              # Source manifests
   parsed/                 # Section-level parsed artifacts
   processed/              # Chunk, embedding, and index artifacts
@@ -269,6 +273,45 @@ Useful options:
 - `--device cpu|cuda|mps`
 - `--preview-chars 200`
 
+### Run a retrieval-evaluation smoke test
+
+The evaluation harness can run with a static fixture retriever, so you can verify artifact writing and metric computation without building local embeddings or indexes first.
+
+```bash
+uv run python -m supportdoc_rag_chatbot evaluate-retrieval \
+  --retriever-kind static \
+  --fixture-name oracle \
+  --top-k 5
+```
+
+By default, the evaluation command:
+
+- loads the committed dev QA dataset under `data/evaluation/`,
+- validates it against the committed metadata + evidence registry,
+- writes per-query artifacts under `data/evaluation/runs/`, and
+- writes a companion summary artifact with hit@k, recall@k, MRR, and latency statistics.
+
+If you want to run the lexical retriever over a local `chunks.jsonl` artifact, use:
+
+```bash
+uv run python -m supportdoc_rag_chatbot evaluate-retrieval \
+  --retriever-kind bm25 \
+  --chunks data/processed/chunks.jsonl \
+  --top-k 5
+```
+
+If you want to run dense or hybrid evaluation over the local FAISS backend, install the dense extras first and pass the saved index artifacts:
+
+```bash
+uv sync --locked --extra dev-tools --extra embeddings-local --extra faiss
+
+uv run python -m supportdoc_rag_chatbot evaluate-retrieval \
+  --retriever-kind dense \
+  --index data/processed/indexes/faiss/chunk_index.faiss \
+  --index-metadata data/processed/indexes/faiss/chunk_index.metadata.json \
+  --top-k 5
+```
+
 ### Local verification
 
 Run lint and tests:
@@ -302,6 +345,20 @@ A small versioned development QA set now lives under `data/evaluation/` for retr
 
 The evaluation helpers in `src/supportdoc_rag_chatbot/evaluation/dev_qa.py` can load the dataset, load the companion metadata/registry files, and validate that every annotated evidence ID belongs to the same snapshot. See `docs/process/retrieval_dev_qa.md` for the schema, annotation rules, and validation workflow.
 
+## 9B. Retrieval Evaluation Harness
+
+The evaluation harness lives in `src/supportdoc_rag_chatbot/evaluation/harness.py` and `src/supportdoc_rag_chatbot/evaluation/retrievers.py`.
+
+It provides:
+
+- deterministic run IDs and default output paths,
+- a common retriever interface for dense, BM25, hybrid, and static fixture runs,
+- per-query JSONL artifacts with ranked chunk hits,
+- summary JSON artifacts with hit@k, recall@k, MRR, and latency statistics, and
+- a CLI entrypoint via `supportdoc_rag_chatbot evaluate-retrieval`.
+
+See `docs/process/retrieval_evaluation_harness.md` for the artifact schema, smoke-test workflow, and implementation notes.
+
 ---
 
 ## 10. Deployment Overview
@@ -313,6 +370,8 @@ The intended deployment path is a FastAPI backend with a web frontend, persisten
 ## 11. Documentation Map / Roadmap
 
 - `docs/process/git_workflow.md` — branch / PR / lockfile workflow
+- `docs/process/retrieval_dev_qa.md` — dev QA dataset schema and annotation rules
+- `docs/process/retrieval_evaluation_harness.md` — evaluation harness schema and local workflow
 - `docs/data/corpus.md` — corpus scope and licensing notes
 - `docs/diagrams/ingestion_pipeline.md` — ingestion pipeline overview
 - `docs/adr/` — architecture decisions and project rationale
