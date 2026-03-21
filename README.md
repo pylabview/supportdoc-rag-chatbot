@@ -13,7 +13,7 @@ The initial corpus is a pinned snapshot of Kubernetes documentation so the proje
 This README is maintained as a live project document and evolves with each completed task issue.
 
 ### Current Phase
-Dense and BM25 retrieval baseline evaluation.
+Dense, BM25, and hybrid retrieval baseline evaluation.
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
@@ -23,16 +23,15 @@ Dense and BM25 retrieval baseline evaluation.
 - Local embedding job that converts `data/processed/chunks.jsonl` into deterministic dense-vector artifacts for downstream index construction.
 - Local FAISS backend that builds, persists, reloads, and searches a dense index over saved embedding artifacts.
 - Developer-facing retrieval smoke CLI for local dense search over a saved FAISS index.
-- Shared retrieval evaluation harness plus dense and BM25 baseline runners that execute the committed Dev QA set and write deterministic result artifacts.
+- Shared retrieval evaluation harness plus dense, BM25, and hybrid baseline runners that execute the committed Dev QA set and write deterministic result artifacts.
 
 ### In Progress
 - Citation contract and refusal behavior integration.
 
 ### Next Up
-- Add hybrid retrieval behind the same evaluation harness.
+- Compare dense, BM25, and hybrid retrieval artifacts to choose the default baseline.
 - Connect retrieval outputs to generation and citation validation.
 - Expand deployment and observability documentation as the backend/API layer matures.
-- Compare dense, BM25, and hybrid retrieval artifacts to choose the default baseline.
 
 ---
 
@@ -304,42 +303,26 @@ A small versioned development QA set now lives under `data/evaluation/` for retr
 
 The evaluation helpers in `src/supportdoc_rag_chatbot/evaluation/dev_qa.py` can load the dataset, load the companion metadata/registry files, and validate that every annotated evidence ID belongs to the same snapshot. See `docs/process/retrieval_dev_qa.md` for the schema, annotation rules, and validation workflow.
 
-## 9B. Dense Retrieval Baseline Evaluation
+## 9B. Hybrid Retrieval Baseline Evaluation
 
-The repository now includes a shared retrieval evaluation harness plus a dense baseline runner. The dense baseline loads an already-built FAISS index, embeds each committed Dev QA query with the embedding model recorded in the index metadata, retrieves top-k chunk IDs, and writes deterministic artifacts under `data/evaluation/runs/` by default.
+The repository now includes a hybrid baseline runner that combines dense FAISS retrieval with BM25 lexical retrieval using Reciprocal Rank Fusion (RRF). The hybrid baseline collects ranked candidates from both component retrievers, merges duplicate chunk IDs deterministically, and writes deterministic artifacts under `data/evaluation/runs/` by default.
 
-Default dense baseline command:
+Default hybrid baseline command:
 
 ```bash
-uv run python -m supportdoc_rag_chatbot run-dense-baseline \
+uv run python -m supportdoc_rag_chatbot run-hybrid-baseline \
+  --chunks data/processed/chunks.jsonl \
   --index data/processed/indexes/faiss/chunk_index.faiss \
   --index-metadata data/processed/indexes/faiss/chunk_index.metadata.json \
   --top-k 5
 ```
 
-The dense run writes:
+The hybrid run writes:
 
 - a per-query results JSONL artifact
 - a summary JSON artifact with hit@k, recall@k, MRR, and latency
 
-See `docs/process/dense_retrieval_baseline.md` for the exact baseline configuration and output layout.
-
-## 9C. BM25 Retrieval Baseline Evaluation
-
-The repository now includes a BM25 baseline runner over the canonical `chunks.jsonl` artifact. The BM25 baseline tokenizes queries and chunks with a lowercase regex tokenizer, scores chunks with deterministic BM25 ranking, and writes deterministic artifacts under `data/evaluation/runs/` by default.
-
-Default BM25 baseline command:
-
-```bash
-uv run python -m supportdoc_rag_chatbot run-bm25-baseline   --chunks data/processed/chunks.jsonl   --top-k 5
-```
-
-The BM25 run writes:
-
-- a per-query results JSONL artifact
-- a summary JSON artifact with hit@k, recall@k, MRR, and latency
-
-See `docs/process/bm25_retrieval_baseline.md` for the tokenization strategy, exact baseline configuration, and output layout.
+See `docs/process/hybrid_retrieval_baseline.md` for the default fusion strategy, exact baseline configuration, and output layout.
 
 ---
 
@@ -355,6 +338,5 @@ The intended deployment path is a FastAPI backend with a web frontend, persisten
 - `docs/data/corpus.md` — corpus scope and licensing notes
 - `docs/diagrams/ingestion_pipeline.md` — ingestion pipeline overview
 - `docs/adr/` — architecture decisions and project rationale
-- `docs/process/dense_retrieval_baseline.md` — default dense baseline config and run command
-- `docs/process/bm25_retrieval_baseline.md` — default BM25 baseline config and run command
+- `docs/process/hybrid_retrieval_baseline.md` — default hybrid baseline config and run command
 - `PROPOSAL.md` — project proposal and delivery framing

@@ -10,13 +10,18 @@ from supportdoc_rag_chatbot.evaluation import (
     DEFAULT_BM25_BASELINE_LABEL,
     DEFAULT_BM25_BASELINE_TOP_K,
     DEFAULT_BM25_K1,
+    DEFAULT_DENSE_BASELINE_LABEL,
+    DEFAULT_DENSE_BASELINE_TOP_K,
     DEFAULT_EVAL_TOP_K,
+    DEFAULT_HYBRID_BASELINE_LABEL,
+    DEFAULT_HYBRID_BASELINE_TOP_K,
     DEFAULT_HYBRID_CANDIDATE_DEPTH,
     DEFAULT_RRF_K,
     BM25BaselineConfig,
     BM25ChunkEvaluationRetriever,
     DenseBaselineConfig,
     DenseFaissEvaluationRetriever,
+    HybridBaselineConfig,
     HybridRRFEvaluationRetriever,
     create_dev_qa_fixture_retriever,
     default_dev_qa_paths,
@@ -27,9 +32,11 @@ from supportdoc_rag_chatbot.evaluation import (
     load_evidence_registry,
     render_bm25_baseline_report,
     render_dense_baseline_report,
+    render_hybrid_baseline_report,
     render_retrieval_evaluation_report,
     run_bm25_baseline,
     run_dense_baseline,
+    run_hybrid_baseline,
     write_query_results,
     write_retrieval_run_summary,
 )
@@ -449,7 +456,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     dense_baseline_parser.add_argument(
         "--top-k",
         type=int,
-        default=DEFAULT_EVAL_TOP_K,
+        default=DEFAULT_DENSE_BASELINE_TOP_K,
         help="Number of ranked hits to keep per query",
     )
     dense_baseline_parser.add_argument(
@@ -459,7 +466,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     dense_baseline_parser.add_argument(
         "--run-label",
-        default="default",
+        default=DEFAULT_DENSE_BASELINE_LABEL,
         help="Logical label appended to the default dense run name",
     )
     dense_baseline_parser.add_argument(
@@ -475,6 +482,110 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Optional output path for the summary metrics JSON",
     )
     dense_baseline_parser.set_defaults(handler=_run_dense_baseline)
+
+    hybrid_baseline_parser = subparsers.add_parser(
+        "run-hybrid-baseline",
+        help="Run the hybrid retrieval baseline over the dev QA set and write deterministic artifacts",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--dataset",
+        type=Path,
+        default=None,
+        help="Optional path to a dev QA dataset JSONL (defaults to committed dataset)",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--dataset-metadata",
+        type=Path,
+        default=None,
+        help="Optional path to dev QA metadata JSON (defaults to committed metadata)",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--registry",
+        type=Path,
+        default=None,
+        help="Optional path to an evidence registry JSON (defaults to committed registry or derives from chunks)",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--chunks",
+        type=Path,
+        default=DEFAULT_CHUNKS_PATH,
+        help="Path to chunks.jsonl used as the canonical lexical corpus",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--index",
+        type=Path,
+        default=DEFAULT_FAISS_INDEX_PATH,
+        help="Path to the persisted FAISS index file",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--index-metadata",
+        type=Path,
+        default=DEFAULT_FAISS_METADATA_PATH,
+        help="Path to the FAISS index metadata JSON",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--row-mapping",
+        type=Path,
+        default=None,
+        help="Optional FAISS row mapping override",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--model-name",
+        default=None,
+        help="Optional embedding model override for dense query embedding",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--device",
+        default=DEFAULT_DEVICE,
+        help="Embedding device, for example cpu, cuda, or mps",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help="Embedding batch size for query embedding",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--rrf-k",
+        type=int,
+        default=DEFAULT_RRF_K,
+        help="Reciprocal-rank-fusion constant for hybrid retrieval",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--candidate-depth",
+        type=int,
+        default=DEFAULT_HYBRID_CANDIDATE_DEPTH,
+        help="Candidate depth per component retriever before fusion",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--top-k",
+        type=int,
+        default=DEFAULT_HYBRID_BASELINE_TOP_K,
+        help="Number of ranked hits to keep per query",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--run-name",
+        default=None,
+        help="Optional run name override for output artifact naming",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--run-label",
+        default=DEFAULT_HYBRID_BASELINE_LABEL,
+        help="Logical label appended to the default hybrid run name",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--results-output",
+        type=Path,
+        default=None,
+        help="Optional output path for the per-query retrieval results JSONL",
+    )
+    hybrid_baseline_parser.add_argument(
+        "--summary-output",
+        type=Path,
+        default=None,
+        help="Optional output path for the summary metrics JSON",
+    )
+    hybrid_baseline_parser.set_defaults(handler=_run_hybrid_baseline)
 
     return parser
 
@@ -574,6 +685,32 @@ def _run_dense_baseline(args: argparse.Namespace) -> int:
         )
     )
     print(render_dense_baseline_report(run))
+    return 0
+
+
+def _run_hybrid_baseline(args: argparse.Namespace) -> int:
+    run = run_hybrid_baseline(
+        config=HybridBaselineConfig(
+            dataset_path=args.dataset,
+            dataset_metadata_path=args.dataset_metadata,
+            registry_path=args.registry,
+            chunks_path=args.chunks,
+            index_path=args.index,
+            index_metadata_path=args.index_metadata,
+            row_mapping_path=args.row_mapping,
+            model_name=args.model_name,
+            device=args.device,
+            batch_size=args.batch_size,
+            rrf_k=args.rrf_k,
+            candidate_depth=args.candidate_depth,
+            top_k=args.top_k,
+            run_name=args.run_name,
+            run_label=args.run_label,
+            results_output_path=args.results_output,
+            summary_output_path=args.summary_output,
+        )
+    )
+    print(render_hybrid_baseline_report(run))
     return 0
 
 

@@ -235,11 +235,18 @@ class HybridRRFEvaluationRetriever:
 
     @property
     def config(self) -> dict[str, Any]:
+        dense_config = getattr(self.dense_retriever, "config", {})
+        lexical_config = getattr(self.lexical_retriever, "config", {})
         return {
+            "fusion_strategy": "rrf",
+            "fusion_strategy_name": "reciprocal-rank-fusion",
             "rrf_k": self.rrf_k,
             "candidate_depth": self.candidate_depth,
+            "tie_break": "chunk_id ascending",
             "dense_retriever": getattr(self.dense_retriever, "name", "dense"),
             "lexical_retriever": getattr(self.lexical_retriever, "name", "lexical"),
+            "dense_config": dict(dense_config),
+            "lexical_config": dict(lexical_config),
         }
 
     def retrieve(self, entry: DevQAEntry, *, top_k: int) -> list[RetrievalHit]:
