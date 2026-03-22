@@ -1,0 +1,9 @@
+{
+  "final_answer": "I can’t answer that from the approved support corpus.",
+  "citations": [],
+  "refusal": {
+    "is_refusal": true,
+    "reason_code": "no_relevant_docs",
+    "message": "I can’t answer that from the approved support corpus."
+  }
+}

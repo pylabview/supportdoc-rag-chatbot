@@ -5,6 +5,14 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
+from supportdoc_rag_chatbot.app.schemas import (
+    DEFAULT_TRUST_ANSWER_FIXTURE_PATH,
+    DEFAULT_TRUST_REFUSAL_FIXTURE_PATH,
+    DEFAULT_TRUST_SCHEMA_PATH,
+    export_query_response_schema,
+    render_trust_schema_smoke_report,
+    run_trust_schema_smoke,
+)
 from supportdoc_rag_chatbot.evaluation import (
     DEFAULT_BM25_B,
     DEFAULT_BM25_BASELINE_LABEL,
@@ -211,6 +219,42 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Maximum number of characters to print from each chunk preview",
     )
     smoke_parser.set_defaults(handler=_run_smoke_dense_retrieval)
+
+    trust_schema_export_parser = subparsers.add_parser(
+        "export-trust-schema",
+        help="Export the canonical trust-layer QueryResponse JSON Schema",
+    )
+    trust_schema_export_parser.add_argument(
+        "--output",
+        type=Path,
+        default=DEFAULT_TRUST_SCHEMA_PATH,
+        help="Output path for the checked-in QueryResponse JSON Schema",
+    )
+    trust_schema_export_parser.set_defaults(handler=_run_export_trust_schema)
+
+    trust_schema_smoke_parser = subparsers.add_parser(
+        "smoke-trust-schema",
+        help="Validate the checked-in trust schema and example answer/refusal payloads",
+    )
+    trust_schema_smoke_parser.add_argument(
+        "--schema",
+        type=Path,
+        default=DEFAULT_TRUST_SCHEMA_PATH,
+        help="Path to the checked-in QueryResponse JSON Schema",
+    )
+    trust_schema_smoke_parser.add_argument(
+        "--answer-fixture",
+        type=Path,
+        default=DEFAULT_TRUST_ANSWER_FIXTURE_PATH,
+        help="Path to the checked-in supported-answer example payload",
+    )
+    trust_schema_smoke_parser.add_argument(
+        "--refusal-fixture",
+        type=Path,
+        default=DEFAULT_TRUST_REFUSAL_FIXTURE_PATH,
+        help="Path to the checked-in refusal example payload",
+    )
+    trust_schema_smoke_parser.set_defaults(handler=_run_smoke_trust_schema)
 
     eval_parser = subparsers.add_parser(
         "evaluate-retrieval",
@@ -642,6 +686,22 @@ def _run_smoke_dense_retrieval(args: argparse.Namespace) -> int:
         preview_chars=args.preview_chars,
     )
     print(render_dense_retrieval_smoke_report(report))
+    return 0
+
+
+def _run_export_trust_schema(args: argparse.Namespace) -> int:
+    output_path = export_query_response_schema(args.output)
+    print(f"Wrote trust schema: {output_path}")
+    return 0
+
+
+def _run_smoke_trust_schema(args: argparse.Namespace) -> int:
+    report = run_trust_schema_smoke(
+        schema_path=args.schema,
+        answer_fixture_path=args.answer_fixture,
+        refusal_fixture_path=args.refusal_fixture,
+    )
+    print(render_trust_schema_smoke_report(report))
     return 0
 
 

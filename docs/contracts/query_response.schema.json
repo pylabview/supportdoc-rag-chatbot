@@ -1,0 +1,126 @@
+{
+  "$defs": {
+    "CitationRecord": {
+      "additionalProperties": false,
+      "description": "Pointer to one supporting span inside the approved corpus.",
+      "properties": {
+        "chunk_id": {
+          "description": "Stable chunk identifier for the cited evidence span.",
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "doc_id": {
+          "description": "Stable source document identifier for the cited evidence.",
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "end_offset": {
+          "description": "Exclusive end offset of the supporting span inside the chunk text.",
+          "minimum": 0,
+          "title": "End Offset",
+          "type": "integer"
+        },
+        "marker": {
+          "description": "User-visible citation marker, for example [1] or [2].",
+          "title": "Marker",
+          "type": "string"
+        },
+        "start_offset": {
+          "description": "Inclusive start offset of the supporting span inside the chunk text.",
+          "minimum": 0,
+          "title": "Start Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "marker",
+        "doc_id",
+        "chunk_id",
+        "start_offset",
+        "end_offset"
+      ],
+      "title": "CitationRecord",
+      "type": "object"
+    },
+    "RefusalReasonCode": {
+      "description": "Allowed refusal categories for user-visible trust-layer refusals.",
+      "enum": [
+        "insufficient_evidence",
+        "no_relevant_docs",
+        "citation_validation_failed",
+        "out_of_scope"
+      ],
+      "title": "RefusalReasonCode",
+      "type": "string"
+    },
+    "RefusalRecord": {
+      "additionalProperties": false,
+      "description": "Structured refusal payload attached to every query response.",
+      "properties": {
+        "is_refusal": {
+          "description": "Whether the response is an explicit refusal instead of a supported answer.",
+          "title": "Is Refusal",
+          "type": "boolean"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "User-visible refusal message, or null for supported answers.",
+          "title": "Message"
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RefusalReasonCode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Machine-readable refusal reason code, or null for supported answers."
+        }
+      },
+      "required": [
+        "is_refusal",
+        "reason_code",
+        "message"
+      ],
+      "title": "RefusalRecord",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Canonical response contract shared by generation, validation, and API serialization.",
+  "properties": {
+    "citations": {
+      "description": "Supporting citation records for a grounded answer. Refusals must return an empty list.",
+      "items": {
+        "$ref": "#/$defs/CitationRecord"
+      },
+      "title": "Citations",
+      "type": "array"
+    },
+    "final_answer": {
+      "description": "User-visible final answer text. For refusals this should be the refusal text shown to the user.",
+      "title": "Final Answer",
+      "type": "string"
+    },
+    "refusal": {
+      "$ref": "#/$defs/RefusalRecord",
+      "description": "Structured refusal state for the response."
+    }
+  },
+  "required": [
+    "final_answer",
+    "citations",
+    "refusal"
+  ],
+  "title": "QueryResponse",
+  "type": "object"
+}

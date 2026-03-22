@@ -13,7 +13,7 @@ The initial corpus is a pinned snapshot of Kubernetes documentation so the proje
 This README is maintained as a live project document and evolves with each completed task issue.
 
 ### Current Phase
-Retrieval baseline comparison documented with a provisional hybrid default.
+Trust-layer response contract scaffolded with a canonical schema, checked-in fixtures, and local smoke validation.
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
@@ -25,13 +25,16 @@ Retrieval baseline comparison documented with a provisional hybrid default.
 - Developer-facing retrieval smoke CLI for local dense search over a saved FAISS index.
 - Shared retrieval evaluation harness plus dense, BM25, and hybrid baseline runners that execute the committed Dev QA set and write deterministic result artifacts.
 - Retrieval comparison note documenting baseline configs, reference fixture metrics, trade-offs, and the provisional default retrieval mode for later epics.
+- Canonical trust-layer `QueryResponse` schema with Pydantic validation, checked-in JSON Schema, example answer/refusal fixtures, and a local trust smoke command.
 
 ### In Progress
-- Citation contract and refusal behavior integration.
+- Prompt rules for citation-backed generation.
+- Citation validation against retrieved evidence spans.
+- Retrieval sufficiency gating before final answer emission.
 
 ### Next Up
-- Validate the provisional hybrid default against regenerated local corpus-level artifacts.
-- Connect retrieval outputs to generation and citation validation.
+- Wire prompt-generation outputs onto the canonical trust response contract.
+- Connect citation validation and refusal gating to the provisional hybrid retrieval default.
 - Expand deployment and observability documentation as the backend/API layer matures.
 
 ---
@@ -273,19 +276,34 @@ Useful options:
 
 ### Local verification
 
-Run lint and tests:
+Run the standard local verification pass:
 
 ```bash
-uv run ruff check . --no-fix
+uv sync --locked --extra dev-tools --extra faiss --extra bm25
+uv run ruff check . --fix
+uv run ruff format .
 uv run ruff format --check .
+uv run pre-commit run --all-files
+uv run pytest -q tests/test_dense_retrieval_baseline.py tests/test_bm25_baseline.py tests/test_hybrid_baseline.py
 uv run pytest -q
+```
+
+### Run the local trust-contract smoke test
+
+```bash
+uv run python -m supportdoc_rag_chatbot smoke-trust-schema \
+  --schema docs/contracts/query_response.schema.json \
+  --answer-fixture docs/contracts/query_response.answer.example.json \
+  --refusal-fixture docs/contracts/query_response.refusal.example.json
 ```
 
 ---
 
 ## 8. Citations and Refusal Behavior
 
-The target product behavior is to answer only when retrieved evidence is sufficient and attributable. Citation validation and refusal rules are still being layered into the backend pipeline, but the repository structure already separates retrieval, generation, and trust-layer concerns so those checks can be added incrementally.
+The repository now includes a canonical trust-layer response contract under `src/supportdoc_rag_chatbot/app/schemas/trust.py`. That contract defines structured supported answers, structured refusals, restricted refusal reason codes, and deterministic JSON Schema export under `docs/contracts/`.
+
+Citation validation and refusal gating are still being layered into the backend pipeline, but later Epics can now reuse one checked-in `QueryResponse` contract instead of duplicating ad hoc response dictionaries.
 
 ---
 
@@ -347,4 +365,5 @@ The intended deployment path is a FastAPI backend with a web frontend, persisten
 - `docs/adr/` — architecture decisions and project rationale
 - `docs/process/hybrid_retrieval_baseline.md` — default hybrid baseline config and run command
 - `docs/process/retrieval_comparison_notes.md` — Epic 4 baseline comparison and provisional default selection
+- `docs/process/trust_response_contract.md` — canonical response contract, schema artifact, and smoke command
 - `PROPOSAL.md` — project proposal and delivery framing
