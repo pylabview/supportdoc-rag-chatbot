@@ -1,0 +1,17 @@
+{
+  "final_answer": "A Pod is the smallest deployable unit in Kubernetes and can run one or more containers that share network and storage resources.",
+  "citations": [
+    {
+      "marker": "[1]",
+      "doc_id": "content-en-docs-concepts-workloads-pods-pods",
+      "chunk_id": "content-en-docs-concepts-workloads-pods-pods__chunk-0001",
+      "start_offset": 0,
+      "end_offset": 118
+    }
+  ],
+  "refusal": {
+    "is_refusal": false,
+    "reason_code": null,
+    "message": null
+  }
+}
