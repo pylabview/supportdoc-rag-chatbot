@@ -13,7 +13,7 @@ The initial corpus is a pinned snapshot of Kubernetes documentation so the proje
 This README is maintained as a live project document and evolves with each completed task issue.
 
 ### Current Phase
-Trust-layer response contract scaffolded with a canonical schema, checked-in fixtures, and local smoke validation.
+Trust-layer response contract plus prompt rules scaffolded with a canonical schema, versioned policy text, and deterministic prompt snapshots.
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
@@ -26,9 +26,9 @@ Trust-layer response contract scaffolded with a canonical schema, checked-in fix
 - Shared retrieval evaluation harness plus dense, BM25, and hybrid baseline runners that execute the committed Dev QA set and write deterministic result artifacts.
 - Retrieval comparison note documenting baseline configs, reference fixture metrics, trade-offs, and the provisional default retrieval mode for later epics.
 - Canonical trust-layer `QueryResponse` schema with Pydantic validation, checked-in JSON Schema, example answer/refusal fixtures, and a local trust smoke command.
+- Reusable trust-layer prompt builder with versioned policy text, untrusted-context delimiters, and deterministic golden prompt snapshots.
 
 ### In Progress
-- Prompt rules for citation-backed generation.
 - Citation validation against retrieved evidence spans.
 - Retrieval sufficiency gating before final answer emission.
 
@@ -305,6 +305,8 @@ The repository now includes a canonical trust-layer response contract under `src
 
 Citation validation and refusal gating are still being layered into the backend pipeline, but later Epics can now reuse one checked-in `QueryResponse` contract instead of duplicating ad hoc response dictionaries.
 
+The trust-layer prompt builder now lives under `src/supportdoc_rag_chatbot/app/services/prompting.py`, while the backend-agnostic policy wording and version log live in `policies/prompt_rules.md`. The builder renders a replaceable model preamble, embeds the canonical `QueryResponse` JSON Schema, and clearly marks retrieved chunks as untrusted data instead of instructions.
+
 ---
 
 ## 9. Evaluation Plan / Results
@@ -366,4 +368,5 @@ The intended deployment path is a FastAPI backend with a web frontend, persisten
 - `docs/process/hybrid_retrieval_baseline.md` — default hybrid baseline config and run command
 - `docs/process/retrieval_comparison_notes.md` — Epic 4 baseline comparison and provisional default selection
 - `docs/process/trust_response_contract.md` — canonical response contract, schema artifact, and smoke command
+- `policies/prompt_rules.md` — trust-layer generation policy, citation rules, refusal instructions, and version log
 - `PROPOSAL.md` — project proposal and delivery framing
