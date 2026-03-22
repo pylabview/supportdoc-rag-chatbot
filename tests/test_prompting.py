@@ -21,7 +21,7 @@ USER_PROMPT_SNAPSHOT_PATH = FIXTURE_DIR / "user_prompt_v1.txt"
 
 
 def _read_text(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+    return path.read_text(encoding="utf-8").rstrip("\n")
 
 
 def make_retrieved_chunks() -> list[RetrievedContextChunk]:
