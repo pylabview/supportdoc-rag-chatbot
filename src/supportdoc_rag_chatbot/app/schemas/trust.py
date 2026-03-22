@@ -112,7 +112,10 @@ class QueryResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     final_answer: str = Field(
-        description="User-visible final answer text. For refusals this should be the refusal text shown to the user.",
+        description=(
+            "User-visible final answer text. For refusals this should be the refusal text shown "
+            "to the user."
+        ),
     )
     citations: list[CitationRecord] = Field(
         description="Supporting citation records for a grounded answer. Refusals must return an empty list.",
@@ -156,7 +159,7 @@ def build_example_answer_response() -> QueryResponse:
     return QueryResponse(
         final_answer=(
             "A Pod is the smallest deployable unit in Kubernetes and can run one or more "
-            "containers that share network and storage resources."
+            "containers that share network and storage resources [1]."
         ),
         citations=[
             CitationRecord(

@@ -1,6 +1,6 @@
 # Trust-Layer Prompt Rules
 
-Status: active  
+Status: active
 Version: `trust-prompt-v1`
 
 This file records the canonical policy text for citation-backed generation. The implementation lives in `src/supportdoc_rag_chatbot/app/services/prompting.py` and assembles a model-specific preamble with the versioned policy blocks below.
