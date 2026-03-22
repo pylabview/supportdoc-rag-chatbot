@@ -13,7 +13,7 @@ The initial corpus is a pinned snapshot of Kubernetes documentation so the proje
 This README is maintained as a live project document and evolves with each completed task issue.
 
 ### Current Phase
-Dense, BM25, and hybrid retrieval baseline evaluation.
+Retrieval baseline comparison documented with a provisional hybrid default.
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
@@ -24,12 +24,13 @@ Dense, BM25, and hybrid retrieval baseline evaluation.
 - Local FAISS backend that builds, persists, reloads, and searches a dense index over saved embedding artifacts.
 - Developer-facing retrieval smoke CLI for local dense search over a saved FAISS index.
 - Shared retrieval evaluation harness plus dense, BM25, and hybrid baseline runners that execute the committed Dev QA set and write deterministic result artifacts.
+- Retrieval comparison note documenting baseline configs, reference fixture metrics, trade-offs, and the provisional default retrieval mode for later epics.
 
 ### In Progress
 - Citation contract and refusal behavior integration.
 
 ### Next Up
-- Compare dense, BM25, and hybrid retrieval artifacts to choose the default baseline.
+- Validate the provisional hybrid default against regenerated local corpus-level artifacts.
 - Connect retrieval outputs to generation and citation validation.
 - Expand deployment and observability documentation as the backend/API layer matures.
 
@@ -324,6 +325,12 @@ The hybrid run writes:
 
 See `docs/process/hybrid_retrieval_baseline.md` for the default fusion strategy, exact baseline configuration, and output layout.
 
+## 9C. Retrieval Comparison Note
+
+A retrieval-only comparison note now lives at `docs/process/retrieval_comparison_notes.md`. It records the current Epic 4 baseline configs, reference fixture metrics from the shared evaluation harness, qualitative trade-offs, and a **provisional default recommendation of `hybrid-rrf`** for follow-on work.
+
+Because the repository does not commit local processed chunk / embedding / FAISS artifacts, the comparison note distinguishes between reproducible fixture metrics and future corpus-level runs that can be regenerated locally when those artifacts exist.
+
 ---
 
 ## 10. Deployment Overview
@@ -339,4 +346,5 @@ The intended deployment path is a FastAPI backend with a web frontend, persisten
 - `docs/diagrams/ingestion_pipeline.md` — ingestion pipeline overview
 - `docs/adr/` — architecture decisions and project rationale
 - `docs/process/hybrid_retrieval_baseline.md` — default hybrid baseline config and run command
+- `docs/process/retrieval_comparison_notes.md` — Epic 4 baseline comparison and provisional default selection
 - `PROPOSAL.md` — project proposal and delivery framing
