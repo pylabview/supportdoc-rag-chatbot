@@ -13,6 +13,11 @@ from supportdoc_rag_chatbot.app.schemas import (
     render_trust_schema_smoke_report,
     run_trust_schema_smoke,
 )
+from supportdoc_rag_chatbot.app.services import (
+    DEFAULT_CITATION_VALIDATOR_CONTEXT_FIXTURE_PATH,
+    render_citation_validator_smoke_report,
+    run_citation_validator_smoke,
+)
 from supportdoc_rag_chatbot.evaluation import (
     DEFAULT_BM25_B,
     DEFAULT_BM25_BASELINE_LABEL,
@@ -255,6 +260,33 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Path to the checked-in refusal example payload",
     )
     trust_schema_smoke_parser.set_defaults(handler=_run_smoke_trust_schema)
+
+    citation_validator_smoke_parser = subparsers.add_parser(
+        "smoke-citation-validator",
+        help=(
+            "Validate the deterministic citation validator against checked-in answer/refusal "
+            "fixtures and retrieved context"
+        ),
+    )
+    citation_validator_smoke_parser.add_argument(
+        "--answer-fixture",
+        type=Path,
+        default=DEFAULT_TRUST_ANSWER_FIXTURE_PATH,
+        help="Path to the checked-in supported-answer example payload",
+    )
+    citation_validator_smoke_parser.add_argument(
+        "--refusal-fixture",
+        type=Path,
+        default=DEFAULT_TRUST_REFUSAL_FIXTURE_PATH,
+        help="Path to the checked-in refusal example payload",
+    )
+    citation_validator_smoke_parser.add_argument(
+        "--retrieved-context",
+        type=Path,
+        default=DEFAULT_CITATION_VALIDATOR_CONTEXT_FIXTURE_PATH,
+        help="Path to the checked-in retrieved-context fixture used for citation validation",
+    )
+    citation_validator_smoke_parser.set_defaults(handler=_run_smoke_citation_validator)
 
     eval_parser = subparsers.add_parser(
         "evaluate-retrieval",
@@ -702,6 +734,16 @@ def _run_smoke_trust_schema(args: argparse.Namespace) -> int:
         refusal_fixture_path=args.refusal_fixture,
     )
     print(render_trust_schema_smoke_report(report))
+    return 0
+
+
+def _run_smoke_citation_validator(args: argparse.Namespace) -> int:
+    report = run_citation_validator_smoke(
+        answer_fixture_path=args.answer_fixture,
+        refusal_fixture_path=args.refusal_fixture,
+        retrieved_context_fixture_path=args.retrieved_context,
+    )
+    print(render_citation_validator_smoke_report(report))
     return 0
 
 

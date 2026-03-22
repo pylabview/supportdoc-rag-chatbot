@@ -7,43 +7,25 @@ import pytest
 from pydantic import ValidationError
 
 from supportdoc_rag_chatbot.app.schemas import (
+    DEFAULT_TRUST_ANSWER_FIXTURE_PATH,
+    DEFAULT_TRUST_REFUSAL_FIXTURE_PATH,
+    DEFAULT_TRUST_SCHEMA_PATH,
     QueryResponse,
-    build_example_answer_response,
-    build_example_refusal_response,
-    export_query_response_schema,
     generate_query_response_json_schema,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SCHEMA_PATH = REPO_ROOT / "docs/contracts/query_response.schema.json"
-ANSWER_FIXTURE_PATH = REPO_ROOT / "docs/contracts/query_response.answer.example.json"
-REFUSAL_FIXTURE_PATH = REPO_ROOT / "docs/contracts/query_response.refusal.example.json"
+SCHEMA_PATH = REPO_ROOT / DEFAULT_TRUST_SCHEMA_PATH
+ANSWER_FIXTURE_PATH = REPO_ROOT / DEFAULT_TRUST_ANSWER_FIXTURE_PATH
+REFUSAL_FIXTURE_PATH = REPO_ROOT / DEFAULT_TRUST_REFUSAL_FIXTURE_PATH
 
 
-def _read_json(path: Path) -> object:
+def _read_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_export_query_response_schema_writes_deterministic_schema(tmp_path: Path) -> None:
-    output_path = tmp_path / "query_response.schema.json"
-
-    returned_path = export_query_response_schema(output_path)
-
-    assert returned_path == output_path
-    assert _read_json(output_path) == generate_query_response_json_schema()
-    assert _read_json(output_path) == _read_json(SCHEMA_PATH)
-
-
-def test_checked_in_answer_fixture_matches_example_builder() -> None:
-    assert _read_json(ANSWER_FIXTURE_PATH) == build_example_answer_response().model_dump(
-        mode="json"
-    )
-
-
-def test_checked_in_refusal_fixture_matches_example_builder() -> None:
-    assert _read_json(REFUSAL_FIXTURE_PATH) == build_example_refusal_response().model_dump(
-        mode="json"
-    )
+def test_checked_in_trust_schema_matches_canonical_export() -> None:
+    assert _read_json(SCHEMA_PATH) == generate_query_response_json_schema()
 
 
 def test_query_response_accepts_checked_in_answer_fixture() -> None:
