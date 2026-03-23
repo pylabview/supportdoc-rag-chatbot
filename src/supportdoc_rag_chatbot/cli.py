@@ -15,8 +15,11 @@ from supportdoc_rag_chatbot.app.schemas import (
 )
 from supportdoc_rag_chatbot.app.services import (
     DEFAULT_CITATION_VALIDATOR_CONTEXT_FIXTURE_PATH,
+    DEFAULT_TRUST_POLICY_CONFIG_PATH,
     render_citation_validator_smoke_report,
+    render_retrieval_sufficiency_smoke_report,
     run_citation_validator_smoke,
+    run_retrieval_sufficiency_smoke,
 )
 from supportdoc_rag_chatbot.evaluation import (
     DEFAULT_BM25_B,
@@ -287,6 +290,21 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Path to the checked-in retrieved-context fixture used for citation validation",
     )
     citation_validator_smoke_parser.set_defaults(handler=_run_smoke_citation_validator)
+
+    retrieval_sufficiency_smoke_parser = subparsers.add_parser(
+        "smoke-retrieval-sufficiency",
+        help=(
+            "Validate the deterministic retrieval sufficiency gating policy against "
+            "built-in allow/thin/refuse scenarios"
+        ),
+    )
+    retrieval_sufficiency_smoke_parser.add_argument(
+        "--config",
+        type=Path,
+        default=DEFAULT_TRUST_POLICY_CONFIG_PATH,
+        help="Path to the YAML config containing trust.retrieval_sufficiency thresholds",
+    )
+    retrieval_sufficiency_smoke_parser.set_defaults(handler=_run_smoke_retrieval_sufficiency)
 
     eval_parser = subparsers.add_parser(
         "evaluate-retrieval",
@@ -744,6 +762,12 @@ def _run_smoke_citation_validator(args: argparse.Namespace) -> int:
         retrieved_context_fixture_path=args.retrieved_context,
     )
     print(render_citation_validator_smoke_report(report))
+    return 0
+
+
+def _run_smoke_retrieval_sufficiency(args: argparse.Namespace) -> int:
+    report = run_retrieval_sufficiency_smoke(config_path=args.config)
+    print(render_retrieval_sufficiency_smoke_report(report))
     return 0
 
 
