@@ -13,7 +13,7 @@ The initial corpus is a pinned snapshot of Kubernetes documentation so the proje
 This README is maintained as a live project document and evolves with each completed task issue.
 
 ### Current Phase
-Trust-layer response contract and deterministic citation validation scaffolded with canonical schemas, reusable services, and local smoke coverage.
+Trust-layer response contract scaffolded with a canonical schema, checked-in fixtures, and local smoke validation.
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
@@ -26,16 +26,15 @@ Trust-layer response contract and deterministic citation validation scaffolded w
 - Shared retrieval evaluation harness plus dense, BM25, and hybrid baseline runners that execute the committed Dev QA set and write deterministic result artifacts.
 - Retrieval comparison note documenting baseline configs, reference fixture metrics, trade-offs, and the provisional default retrieval mode for later epics.
 - Canonical trust-layer `QueryResponse` schema with Pydantic validation, checked-in JSON Schema, example answer/refusal fixtures, and a local trust smoke command.
-- Deterministic citation validator for sentence/bullet citation coverage, marker resolution, chunk allowlist enforcement, offset bounds checks, and refusal contradictions.
-- Local citation-validator smoke CLI backed by checked-in answer, refusal, and retrieved-context fixtures.
 
 ### In Progress
+- Prompt rules for citation-backed generation.
+- Citation validation against retrieved evidence spans.
 - Retrieval sufficiency gating before final answer emission.
-- Backend/API orchestration that wires retrieval, validation, and refusal policy together.
 
 ### Next Up
-- Connect citation validation and retrieval sufficiency gating to the provisional hybrid retrieval default.
-- Add backend orchestration paths that translate validator retry/refuse outcomes into API behavior.
+- Wire prompt-generation outputs onto the canonical trust response contract.
+- Connect citation validation and refusal gating to the provisional hybrid retrieval default.
 - Expand deployment and observability documentation as the backend/API layer matures.
 
 ---
@@ -277,7 +276,7 @@ Useful options:
 
 ### Local verification
 
-Run lint and tests:
+Run the standard local verification pass:
 
 ```bash
 uv sync --locked --extra dev-tools --extra faiss --extra bm25
@@ -298,13 +297,11 @@ uv run python -m supportdoc_rag_chatbot smoke-trust-schema \
   --refusal-fixture docs/contracts/query_response.refusal.example.json
 ```
 
-### Run the local citation-validator smoke test
+### Run the local retrieval-sufficiency smoke test
 
 ```bash
-uv run python -m supportdoc_rag_chatbot smoke-citation-validator \
-  --answer-fixture docs/contracts/query_response.answer.example.json \
-  --refusal-fixture docs/contracts/query_response.refusal.example.json \
-  --retrieved-context docs/contracts/query_response.retrieved_context.example.json
+uv run python -m supportdoc_rag_chatbot smoke-retrieval-sufficiency \
+  --config src/supportdoc_rag_chatbot/resources/default_config.yaml
 ```
 
 ---
@@ -313,7 +310,7 @@ uv run python -m supportdoc_rag_chatbot smoke-citation-validator \
 
 The repository now includes a canonical trust-layer response contract under `src/supportdoc_rag_chatbot/app/schemas/trust.py`. That contract defines structured supported answers, structured refusals, restricted refusal reason codes, and deterministic JSON Schema export under `docs/contracts/`.
 
-The deterministic citation validator now lives under `src/supportdoc_rag_chatbot/app/services/citation_validator.py`, with answer segmentation helpers in `src/supportdoc_rag_chatbot/app/services/sentence_splitter.py`. Together they verify sentence/bullet citation coverage, marker-to-record resolution, request-scoped chunk allowlist membership, offset bounds, and refusal/answer contradictions.
+Retrieval sufficiency gating now lives under `src/supportdoc_rag_chatbot/app/services/refusal_policy.py`, with shared request/decision types in `src/supportdoc_rag_chatbot/app/services/policy_types.py` and default thresholds in `src/supportdoc_rag_chatbot/resources/default_config.yaml`. The policy computes deterministic score aggregates, distinguishes `no_relevant_docs` from `insufficient_evidence`, emits machine-readable diagnostics for logging, and can cap thin answers before backend orchestration trusts model output.
 
 ---
 
@@ -376,5 +373,4 @@ The intended deployment path is a FastAPI backend with a web frontend, persisten
 - `docs/process/hybrid_retrieval_baseline.md` — default hybrid baseline config and run command
 - `docs/process/retrieval_comparison_notes.md` — Epic 4 baseline comparison and provisional default selection
 - `docs/process/trust_response_contract.md` — canonical response contract, schema artifact, and smoke command
-- `docs/process/citation_validator.md` — deterministic citation-validation rules, outcomes, and local smoke command
 - `PROPOSAL.md` — project proposal and delivery framing

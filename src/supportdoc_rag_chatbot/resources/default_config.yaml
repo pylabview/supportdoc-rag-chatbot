@@ -7,3 +7,14 @@ ingestion:
   chunking:
     max_tokens: 350
     overlap_tokens: 50
+
+trust:
+  retrieval_sufficiency:
+    score_normalization: unit_interval
+    k: 8
+    T_top1: 0.75
+    T_mean3: 0.60
+    T_support: 0.55
+    N_support: 2
+    L_thin_max: 3
+    T_nohit: 0.20
