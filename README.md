@@ -312,6 +312,8 @@ The repository now includes a canonical trust-layer response contract under `src
 
 Retrieval sufficiency gating now lives under `src/supportdoc_rag_chatbot/app/services/refusal_policy.py`, with shared request/decision types in `src/supportdoc_rag_chatbot/app/services/policy_types.py` and default thresholds in `src/supportdoc_rag_chatbot/resources/default_config.yaml`. The policy computes deterministic score aggregates, distinguishes `no_relevant_docs` from `insufficient_evidence`, emits machine-readable diagnostics for logging, and can cap thin answers before backend orchestration trusts model output.
 
+Structured user-facing refusal rendering now lives under `src/supportdoc_rag_chatbot/app/services/refusal_builder.py`. It maps retrieval gating failures and citation validation failures into canonical `QueryResponse` refusals with stable reason-code-specific messages and optional next-step guidance.
+
 ---
 
 ## 9. Evaluation Plan / Results
@@ -373,4 +375,5 @@ The intended deployment path is a FastAPI backend with a web frontend, persisten
 - `docs/process/hybrid_retrieval_baseline.md` — default hybrid baseline config and run command
 - `docs/process/retrieval_comparison_notes.md` — Epic 4 baseline comparison and provisional default selection
 - `docs/process/trust_response_contract.md` — canonical response contract, schema artifact, and smoke command
+- `docs/process/refusal_response_builder.md` — canonical refusal messages and builder entry points
 - `PROPOSAL.md` — project proposal and delivery framing
