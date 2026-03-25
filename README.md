@@ -304,6 +304,25 @@ uv run python -m supportdoc_rag_chatbot smoke-retrieval-sufficiency \
   --config src/supportdoc_rag_chatbot/resources/default_config.yaml
 ```
 
+### Run the local API skeleton
+
+The backend now exports the default Uvicorn target `supportdoc_rag_chatbot.app.api:app` with three bootable endpoints:
+
+- `GET /healthz`
+- `GET /readyz`
+- `POST /query`
+
+The `/query` route currently validates the request body and returns a canonical `QueryResponse` refusal placeholder until orchestration work is wired in.
+
+```bash
+uv run uvicorn supportdoc_rag_chatbot.app.api:app --host 127.0.0.1 --port 9001
+curl http://127.0.0.1:9001/healthz
+curl http://127.0.0.1:9001/readyz
+curl -X POST http://127.0.0.1:9001/query \
+  -H 'content-type: application/json' \
+  -d '{"question":"What is a Pod?"}'
+```
+
 ---
 
 ## 8. Citations and Refusal Behavior
