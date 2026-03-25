@@ -304,23 +304,38 @@ uv run python -m supportdoc_rag_chatbot smoke-retrieval-sufficiency \
   --config src/supportdoc_rag_chatbot/resources/default_config.yaml
 ```
 
-### Run the local API skeleton
+### Generation backend modes for local development
 
-The backend now exports the default Uvicorn target `supportdoc_rag_chatbot.app.api:app` with three bootable endpoints:
+The generation client abstraction now lives under `src/supportdoc_rag_chatbot/app/client/` and supports two deterministic modes:
 
-- `GET /healthz`
-- `GET /readyz`
-- `POST /query`
+- `fixture`: local smoke mode that reads the checked-in trust contract fixtures from `docs/contracts/`
+- `http`: thin `httpx` client mode for future remote model endpoints that return the canonical `QueryResponse` payload
 
-The `/query` route currently validates the request body and returns a canonical `QueryResponse` refusal placeholder until orchestration work is wired in.
+Use fixture mode when you want repeatable local behavior without any external model infrastructure:
 
-```bash
-uv run uvicorn supportdoc_rag_chatbot.app.api:app --host 127.0.0.1 --port 9001
-curl http://127.0.0.1:9001/healthz
-curl http://127.0.0.1:9001/readyz
-curl -X POST http://127.0.0.1:9001/query \
-  -H 'content-type: application/json' \
-  -d '{"question":"What is a Pod?"}'
+```python
+from supportdoc_rag_chatbot.app.client import GenerationRequest, create_generation_client
+
+client = create_generation_client(mode="fixture")
+result = client.generate(GenerationRequest(question="What is a Pod?"))
+response = result.require_response()
+print(response.final_answer)
+```
+
+Use HTTP mode when you want to point backend orchestration at a remote model-serving endpoint:
+
+```python
+from supportdoc_rag_chatbot.app.client import GenerationRequest, create_generation_client
+
+client = create_generation_client(
+    mode="http",
+    base_url="http://127.0.0.1:8080",
+    endpoint_path="/query",
+    timeout_seconds=30.0,
+)
+result = client.generate(GenerationRequest(question="What is a Pod?"))
+print(result.is_success)
+client.close()
 ```
 
 ---
