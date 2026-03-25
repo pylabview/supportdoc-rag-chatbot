@@ -1,11 +1,22 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
+from supportdoc_rag_chatbot.app.core import close_cached_query_orchestrator
 from supportdoc_rag_chatbot.config import BackendSettings, get_backend_settings
 
 from .errors import register_exception_handlers
 from .routes import query_router, system_router
+
+
+@asynccontextmanager
+async def _app_lifespan(app: FastAPI):
+    try:
+        yield
+    finally:
+        close_cached_query_orchestrator(app)
 
 
 def create_app(*, settings: BackendSettings | None = None) -> FastAPI:
@@ -17,6 +28,7 @@ def create_app(*, settings: BackendSettings | None = None) -> FastAPI:
         version=resolved_settings.api_version,
         docs_url=resolved_settings.docs_url,
         redoc_url=resolved_settings.redoc_url,
+        lifespan=_app_lifespan,
     )
     app.state.settings = resolved_settings
 
