@@ -9,10 +9,19 @@ from dotenv import load_dotenv
 from fastapi import Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from supportdoc_rag_chatbot.app.client import (
+    DEFAULT_GENERATION_TIMEOUT_SECONDS,
+    GenerationBackendMode,
+)
+from supportdoc_rag_chatbot.app.core.retrieval import RetrievalBackendMode
+
 DEFAULT_API_TITLE = "SupportDoc RAG Chatbot API"
 DEFAULT_API_ENVIRONMENT = "local"
 DEFAULT_API_DOCS_URL = "/docs"
 DEFAULT_API_REDOC_URL = "/redoc"
+DEFAULT_QUERY_RETRIEVAL_MODE = RetrievalBackendMode.FIXTURE
+DEFAULT_QUERY_GENERATION_MODE = GenerationBackendMode.FIXTURE
+DEFAULT_QUERY_TOP_K = 3
 
 
 class BackendSettings(BaseModel):
@@ -25,13 +34,48 @@ class BackendSettings(BaseModel):
     api_version: str = Field(default_factory=lambda: _default_api_version())
     docs_url: str = Field(default=DEFAULT_API_DOCS_URL)
     redoc_url: str = Field(default=DEFAULT_API_REDOC_URL)
+    query_retrieval_mode: RetrievalBackendMode = Field(default=DEFAULT_QUERY_RETRIEVAL_MODE)
+    query_generation_mode: GenerationBackendMode = Field(default=DEFAULT_QUERY_GENERATION_MODE)
+    query_generation_base_url: str | None = None
+    query_generation_timeout_seconds: float = Field(default=DEFAULT_GENERATION_TIMEOUT_SECONDS)
+    query_top_k: int = Field(default=DEFAULT_QUERY_TOP_K)
 
-    @field_validator("app_name", "environment", "api_version", "docs_url", "redoc_url")
+    @field_validator(
+        "app_name",
+        "environment",
+        "api_version",
+        "docs_url",
+        "redoc_url",
+    )
     @classmethod
     def _validate_non_blank(cls, value: str, info) -> str:
         normalized = value.strip()
         if not normalized:
             raise ValueError(f"{info.field_name} must not be blank")
+        return normalized
+
+    @field_validator("query_generation_base_url")
+    @classmethod
+    def _validate_optional_base_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+    @field_validator("query_generation_timeout_seconds")
+    @classmethod
+    def _validate_generation_timeout(cls, value: float) -> float:
+        normalized = float(value)
+        if normalized <= 0:
+            raise ValueError("query_generation_timeout_seconds must be > 0")
+        return normalized
+
+    @field_validator("query_top_k")
+    @classmethod
+    def _validate_query_top_k(cls, value: int) -> int:
+        normalized = int(value)
+        if normalized <= 0:
+            raise ValueError("query_top_k must be > 0")
         return normalized
 
 
@@ -60,6 +104,34 @@ def load_backend_settings(environ: Mapping[str, str] | None = None) -> BackendSe
             source,
             "SUPPORTDOC_API_REDOC_URL",
             default=DEFAULT_API_REDOC_URL,
+        ),
+        query_retrieval_mode=RetrievalBackendMode(
+            _read_env_string(
+                source,
+                "SUPPORTDOC_QUERY_RETRIEVAL_MODE",
+                default=DEFAULT_QUERY_RETRIEVAL_MODE.value,
+            )
+        ),
+        query_generation_mode=GenerationBackendMode(
+            _read_env_string(
+                source,
+                "SUPPORTDOC_QUERY_GENERATION_MODE",
+                default=DEFAULT_QUERY_GENERATION_MODE.value,
+            )
+        ),
+        query_generation_base_url=_read_env_optional_string(
+            source,
+            "SUPPORTDOC_QUERY_GENERATION_BASE_URL",
+        ),
+        query_generation_timeout_seconds=_read_env_float(
+            source,
+            "SUPPORTDOC_QUERY_GENERATION_TIMEOUT_SECONDS",
+            default=DEFAULT_GENERATION_TIMEOUT_SECONDS,
+        ),
+        query_top_k=_read_env_int(
+            source,
+            "SUPPORTDOC_QUERY_TOP_K",
+            default=DEFAULT_QUERY_TOP_K,
         ),
     )
 
@@ -96,12 +168,37 @@ def _read_env_string(source: Mapping[str, str], key: str, *, default: str) -> st
     return normalized
 
 
+def _read_env_optional_string(source: Mapping[str, str], key: str) -> str | None:
+    value = source.get(key)
+    if value is None:
+        return None
+    normalized = value.strip()
+    return normalized or None
+
+
+def _read_env_int(source: Mapping[str, str], key: str, *, default: int) -> int:
+    value = source.get(key)
+    if value is None or not value.strip():
+        return default
+    return int(value)
+
+
+def _read_env_float(source: Mapping[str, str], key: str, *, default: float) -> float:
+    value = source.get(key)
+    if value is None or not value.strip():
+        return default
+    return float(value)
+
+
 __all__ = [
     "BackendSettings",
     "DEFAULT_API_DOCS_URL",
     "DEFAULT_API_ENVIRONMENT",
     "DEFAULT_API_REDOC_URL",
     "DEFAULT_API_TITLE",
+    "DEFAULT_QUERY_GENERATION_MODE",
+    "DEFAULT_QUERY_RETRIEVAL_MODE",
+    "DEFAULT_QUERY_TOP_K",
     "clear_backend_settings_cache",
     "get_backend_settings",
     "get_request_settings",

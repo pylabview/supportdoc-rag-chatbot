@@ -13,11 +13,22 @@ TEST_SETTINGS = BackendSettings(
     api_version="9.9.9",
     docs_url="/docs",
     redoc_url="/redoc",
+    query_retrieval_mode="fixture",
+    query_generation_mode="fixture",
+)
+ARTIFACT_SETTINGS = BackendSettings(
+    app_name="SupportDoc Artifact API",
+    environment="test",
+    api_version="9.9.9",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    query_retrieval_mode="artifact",
+    query_generation_mode="fixture",
 )
 
 
-def build_test_client() -> TestClient:
-    return TestClient(create_app(settings=TEST_SETTINGS))
+def build_test_client(*, settings: BackendSettings = TEST_SETTINGS) -> TestClient:
+    return TestClient(create_app(settings=settings))
 
 
 def test_module_exports_bootable_fastapi_apps() -> None:
@@ -33,6 +44,11 @@ def test_load_backend_settings_reads_env_mapping() -> None:
             "SUPPORTDOC_API_VERSION": "1.2.3",
             "SUPPORTDOC_API_DOCS_URL": "/docs-local",
             "SUPPORTDOC_API_REDOC_URL": "/redoc-local",
+            "SUPPORTDOC_QUERY_RETRIEVAL_MODE": "artifact",
+            "SUPPORTDOC_QUERY_GENERATION_MODE": "http",
+            "SUPPORTDOC_QUERY_GENERATION_BASE_URL": "https://model.example.test",
+            "SUPPORTDOC_QUERY_GENERATION_TIMEOUT_SECONDS": "12.5",
+            "SUPPORTDOC_QUERY_TOP_K": "7",
         }
     )
 
@@ -42,6 +58,11 @@ def test_load_backend_settings_reads_env_mapping() -> None:
         api_version="1.2.3",
         docs_url="/docs-local",
         redoc_url="/redoc-local",
+        query_retrieval_mode="artifact",
+        query_generation_mode="http",
+        query_generation_base_url="https://model.example.test",
+        query_generation_timeout_seconds=12.5,
+        query_top_k=7,
     )
 
 
@@ -67,9 +88,22 @@ def test_readyz_returns_deterministic_json_without_external_dependencies() -> No
     }
 
 
-def test_query_returns_canonical_query_response_placeholder() -> None:
+def test_query_returns_supported_answer_from_backend_orchestration() -> None:
     with build_test_client() as client:
         response = client.post("/query", json={"question": "What is a Pod?"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    validated = QueryResponse.model_validate(payload)
+
+    assert validated.refusal.is_refusal is False
+    assert validated.citations[0].marker == "[1]"
+    assert payload["final_answer"].startswith("A Pod is the smallest deployable unit")
+
+
+def test_query_returns_canonical_no_relevant_docs_refusal_for_unknown_question() -> None:
+    with build_test_client() as client:
+        response = client.post("/query", json={"question": "How do I reset my laptop BIOS?"})
 
     assert response.status_code == 200
     payload = response.json()
@@ -78,7 +112,17 @@ def test_query_returns_canonical_query_response_placeholder() -> None:
     assert validated.refusal.is_refusal is True
     assert validated.refusal.reason_code is RefusalReasonCode.NO_RELEVANT_DOCS
     assert validated.citations == []
-    assert payload["final_answer"] == "I can’t answer that from the approved support corpus."
+
+
+def test_query_returns_json_config_error_when_artifact_retrieval_is_enabled_without_artifacts() -> (
+    None
+):
+    with build_test_client(settings=ARTIFACT_SETTINGS) as client:
+        response = client.post("/query", json={"question": "What is a Pod?"})
+
+    assert response.status_code == 500
+    assert response.json()["error"]["code"] == "backend_configuration_error"
+    assert "chunk_index.metadata.json" in response.json()["error"]["message"]
 
 
 def test_query_validation_errors_return_json_error_response() -> None:

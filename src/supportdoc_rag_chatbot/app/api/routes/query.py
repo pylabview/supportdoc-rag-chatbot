@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from typing import Annotated
 
-from supportdoc_rag_chatbot.app.schemas import QueryResponse, RefusalReasonCode
-from supportdoc_rag_chatbot.app.services import build_refusal_response
+from fastapi import APIRouter, Depends
+
+from supportdoc_rag_chatbot.app.core import QueryOrchestrator, get_request_query_orchestrator
+from supportdoc_rag_chatbot.app.schemas import QueryResponse
 
 from ..schemas import QueryRequest
 
@@ -13,8 +15,10 @@ router = APIRouter(tags=["query"])
 @router.post(
     "/query",
     response_model=QueryResponse,
-    summary="Validate a query request and return the canonical response envelope",
+    summary="Run backend retrieval, gating, generation, and validation for one question",
 )
-def post_query(payload: QueryRequest) -> QueryResponse:
-    del payload
-    return build_refusal_response(RefusalReasonCode.NO_RELEVANT_DOCS)
+def post_query(
+    payload: QueryRequest,
+    orchestrator: Annotated[QueryOrchestrator, Depends(get_request_query_orchestrator)],
+) -> QueryResponse:
+    return orchestrator.run(payload.question)
