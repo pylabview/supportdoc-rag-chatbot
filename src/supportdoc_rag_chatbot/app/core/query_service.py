@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -23,11 +24,14 @@ from supportdoc_rag_chatbot.app.services import (
     validate_query_response_citations,
 )
 from supportdoc_rag_chatbot.config import BackendSettings, get_request_settings
+from supportdoc_rag_chatbot.logging_conf import log_event
 
 from .errors import QueryPipelineConfigurationError, QueryPipelineRuntimeError
 from .retrieval import QueryRetriever, create_query_retriever
 
 DEFAULT_QUERY_MAX_GENERATION_ATTEMPTS = 2
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -50,17 +54,75 @@ class QueryOrchestrator:
 
     def run(self, question: str) -> QueryResponse:
         validated_question = _validate_required_string(question, field_name="question")
+        log_event(
+            logger,
+            "query.orchestration.started",
+            retrieval_mode=self.retriever.backend_mode.value,
+            retriever_name=self.retriever.name,
+            retriever_type=self.retriever.retriever_type,
+            generation_mode=self.generation_client.backend_mode.value,
+            generation_backend=self.generation_client.backend_name,
+            top_k=self.top_k,
+            max_generation_attempts=self.max_generation_attempts,
+        )
+
         retrieved = self.retriever.retrieve(validated_question, top_k=self.top_k)
+        log_event(
+            logger,
+            "query.retrieval.completed",
+            retrieval_mode=self.retriever.backend_mode.value,
+            retriever_name=retrieved.retriever_name,
+            retriever_type=retrieved.retriever_type,
+            top_k=self.top_k,
+            retrieved_count=len(retrieved.chunks),
+            top_score=(retrieved.chunks[0].score if retrieved.chunks else None),
+        )
+
         decision = evaluate_retrieval_sufficiency(
             _build_sufficiency_request(validated_question, retrieved),
             thresholds=self.thresholds,
         )
+        log_event(
+            logger,
+            "query.sufficiency.decided",
+            retrieval_mode=self.retriever.backend_mode.value,
+            sufficiency_action=decision.action.value,
+            refusal_reason=(
+                decision.refusal_reason_code.value
+                if decision.refusal_reason_code is not None
+                else None
+            ),
+            max_answer_sentences=decision.max_answer_sentences,
+            available_hit_count=decision.diagnostics.summary.available_hit_count,
+            support_count=decision.diagnostics.summary.support_count,
+        )
         if decision.should_refuse:
-            return build_refusal_from_retrieval_decision(decision)
+            response = build_refusal_from_retrieval_decision(decision)
+            log_event(
+                logger,
+                "query.refusal.returned",
+                stage="retrieval_sufficiency",
+                refusal_reason=response.refusal.reason_code.value,
+                retry_count=0,
+            )
+            log_event(
+                logger,
+                "query.completed",
+                outcome="refusal",
+                refusal_reason=response.refusal.reason_code.value,
+                retry_count=0,
+            )
+            return response
 
         prompt = build_trust_prompt(
             question=validated_question,
             retrieved_chunks=retrieved.to_prompt_chunks(),
+        )
+        log_event(
+            logger,
+            "query.prompt.rendered",
+            retrieved_chunk_count=len(retrieved.chunks),
+            max_answer_sentences=decision.max_answer_sentences,
         )
         return self._run_generation_loop(
             question=validated_question,
@@ -81,6 +143,16 @@ class QueryOrchestrator:
         max_answer_sentences: int | None,
     ) -> QueryResponse:
         for attempt in range(1, self.max_generation_attempts + 1):
+            log_event(
+                logger,
+                "query.generation.attempted",
+                attempt=attempt,
+                generation_mode=self.generation_client.backend_mode.value,
+                generation_backend=self.generation_client.backend_name,
+                retriever_name=retrieved.retriever_name,
+                retriever_type=retrieved.retriever_type,
+                retrieved_chunk_count=len(retrieved.chunks),
+            )
             result = self.generation_client.generate(
                 GenerationRequest(
                     question=question,
@@ -97,13 +169,46 @@ class QueryOrchestrator:
             )
             if result.is_failure:
                 assert result.failure is not None
+                log_event(
+                    logger,
+                    "query.generation.failed",
+                    attempt=attempt,
+                    generation_mode=self.generation_client.backend_mode.value,
+                    generation_backend=result.failure.backend_name,
+                    failure_code=result.failure.code.value,
+                    retryable=result.failure.retryable,
+                    status_code=result.failure.status_code,
+                )
                 if (
                     result.failure.code is GenerationFailureCode.PARSE_ERROR
                     and attempt < self.max_generation_attempts
                 ):
+                    log_event(
+                        logger,
+                        "query.generation.retry_scheduled",
+                        attempt=attempt,
+                        retry_count=attempt,
+                        retry_reason=result.failure.code.value,
+                    )
                     continue
                 if result.failure.code is GenerationFailureCode.PARSE_ERROR:
-                    return build_refusal_response(RefusalReasonCode.CITATION_VALIDATION_FAILED)
+                    response = build_refusal_response(RefusalReasonCode.CITATION_VALIDATION_FAILED)
+                    log_event(
+                        logger,
+                        "query.refusal.returned",
+                        stage="generation",
+                        refusal_reason=response.refusal.reason_code.value,
+                        retry_count=attempt - 1,
+                        failure_code=result.failure.code.value,
+                    )
+                    log_event(
+                        logger,
+                        "query.completed",
+                        outcome="refusal",
+                        refusal_reason=response.refusal.reason_code.value,
+                        retry_count=attempt - 1,
+                    )
+                    return response
                 raise QueryPipelineRuntimeError(_render_generation_failure(result.failure))
 
             response = result.require_response()
@@ -111,13 +216,68 @@ class QueryOrchestrator:
                 response,
                 retrieved_chunks=retrieved.to_citation_contexts(),
             )
+            log_event(
+                logger,
+                "query.citation_validation.completed",
+                attempt=attempt,
+                citation_validation_outcome=validation.outcome.value,
+                failure_count=len(validation.failures),
+                failure_codes=[failure.code.value for failure in validation.failures],
+            )
             if validation.is_valid:
+                log_event(
+                    logger,
+                    "query.completed",
+                    outcome="answer",
+                    citation_count=len(response.citations),
+                    retry_count=attempt - 1,
+                )
                 return response
             if validation.should_retry and attempt < self.max_generation_attempts:
+                log_event(
+                    logger,
+                    "query.generation.retry_scheduled",
+                    attempt=attempt,
+                    retry_count=attempt,
+                    retry_reason="citation_validation_failed",
+                )
                 continue
-            return build_refusal_from_citation_validation(validation)
+            response = build_refusal_from_citation_validation(validation)
+            log_event(
+                logger,
+                "query.refusal.returned",
+                stage="citation_validation",
+                refusal_reason=response.refusal.reason_code.value,
+                citation_validation_outcome=validation.outcome.value,
+                failure_count=len(validation.failures),
+                failure_codes=[failure.code.value for failure in validation.failures],
+                retry_count=attempt - 1,
+            )
+            log_event(
+                logger,
+                "query.completed",
+                outcome="refusal",
+                refusal_reason=response.refusal.reason_code.value,
+                retry_count=attempt - 1,
+            )
+            return response
 
-        return build_refusal_response(RefusalReasonCode.CITATION_VALIDATION_FAILED)
+        response = build_refusal_response(RefusalReasonCode.CITATION_VALIDATION_FAILED)
+        log_event(
+            logger,
+            "query.refusal.returned",
+            stage="generation",
+            refusal_reason=response.refusal.reason_code.value,
+            retry_count=self.max_generation_attempts - 1,
+        )
+        log_event(
+            logger,
+            "query.completed",
+            outcome="refusal",
+            refusal_reason=response.refusal.reason_code.value,
+            retry_count=self.max_generation_attempts - 1,
+        )
+        return response
 
 
 def create_query_orchestrator(*, settings: BackendSettings) -> QueryOrchestrator:

@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from supportdoc_rag_chatbot.app.core import QueryPipelineError
+from supportdoc_rag_chatbot.logging_conf import log_event
 
 from .schemas import ApiError, ApiErrorResponse
 
@@ -52,9 +53,13 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request,
         exc: QueryPipelineError,
     ) -> JSONResponse:
-        logger.exception(
-            "Backend query pipeline error",
-            extra={"path": str(request.url.path), "error_code": exc.code},
+        log_event(
+            logger,
+            "api.query_pipeline.error",
+            level=logging.ERROR,
+            exc_info=exc,
+            path=str(request.url.path),
+            error_code=exc.code,
         )
         payload = ApiErrorResponse(
             error=ApiError(
@@ -69,7 +74,14 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request,
         exc: Exception,
     ) -> JSONResponse:
-        logger.exception("Unhandled API exception", extra={"path": str(request.url.path)})
+        log_event(
+            logger,
+            "api.unhandled_exception",
+            level=logging.ERROR,
+            exc_info=exc,
+            path=str(request.url.path),
+            error_code="internal_server_error",
+        )
         payload = ApiErrorResponse(
             error=ApiError(
                 code="internal_server_error",
