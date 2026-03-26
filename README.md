@@ -304,39 +304,83 @@ uv run python -m supportdoc_rag_chatbot smoke-retrieval-sufficiency \
   --config src/supportdoc_rag_chatbot/resources/default_config.yaml
 ```
 
-### Generation backend modes for local development
+---
 
-The generation client abstraction now lives under `src/supportdoc_rag_chatbot/app/client/` and supports two deterministic modes:
+## 7A. Local API Smoke Workflow
 
-- `fixture`: local smoke mode that reads the checked-in trust contract fixtures from `docs/contracts/`
-- `http`: thin `httpx` client mode for future remote model endpoints that return the canonical `QueryResponse` payload
+EPIC 6 now includes a practical local API startup path for smoke testing from a clean checkout. The default startup mode is **fixture** so the API can boot without a model server or local retrieval artifacts.
 
-Use fixture mode when you want repeatable local behavior without any external model infrastructure:
+### Refresh the locked environment
 
-```python
-from supportdoc_rag_chatbot.app.client import GenerationRequest, create_generation_client
-
-client = create_generation_client(mode="fixture")
-result = client.generate(GenerationRequest(question="What is a Pod?"))
-response = result.require_response()
-print(response.final_answer)
+```bash
+uv sync --locked --extra dev-tools --extra faiss
 ```
 
-Use HTTP mode when you want to point backend orchestration at a remote model-serving endpoint:
+### Start the local API
 
-```python
-from supportdoc_rag_chatbot.app.client import GenerationRequest, create_generation_client
-
-client = create_generation_client(
-    mode="http",
-    base_url="http://127.0.0.1:8080",
-    endpoint_path="/query",
-    timeout_seconds=30.0,
-)
-result = client.generate(GenerationRequest(question="What is a Pod?"))
-print(result.is_success)
-client.close()
+```bash
+./scripts/run-api-local.sh
 ```
+
+That command:
+
+- loads `.env` values automatically when present,
+- defaults to `SUPPORTDOC_RAG_CHATBOT_API_MODE=fixture`,
+- runs a startup preflight before launching Uvicorn, and
+- starts `supportdoc_rag_chatbot.app.api:app` on `127.0.0.1:9001` by default.
+
+### Fixture mode (default)
+
+Fixture mode is the first-run local path. It returns deterministic, schema-valid responses using the checked-in trust fixtures and is intended for repo-only API smoke testing.
+
+```bash
+./scripts/run-api-local.sh
+```
+
+Example local smoke calls:
+
+```bash
+curl http://127.0.0.1:9001/healthz
+curl http://127.0.0.1:9001/readyz
+curl -X POST http://127.0.0.1:9001/query \
+  -H 'content-type: application/json' \
+  -d '{"question":"What is a Pod?"}'
+```
+
+### Artifact mode
+
+Artifact mode is for local users who already generated `chunks.jsonl` plus the FAISS artifact set. The startup script fails fast with clear guidance when any required files are missing.
+
+```bash
+SUPPORTDOC_RAG_CHATBOT_API_MODE=artifact ./scripts/run-api-local.sh
+```
+
+Required artifact paths default to:
+
+- `data/processed/chunks.jsonl`
+- `data/processed/indexes/faiss/chunk_index.faiss`
+- `data/processed/indexes/faiss/chunk_index.metadata.json`
+- `data/processed/indexes/faiss/chunk_index.row_mapping.json`
+
+You can override those paths in `.env` or with exported environment variables. See `.env.example` for the supported local startup settings.
+
+### Optional local configuration
+
+Copy `.env.example` to `.env` when you want to switch modes or override host / port / artifact paths:
+
+```bash
+cp .env.example .env
+```
+
+The most useful variables are:
+
+- `SUPPORTDOC_RAG_CHATBOT_API_MODE=fixture|artifact`
+- `SUPPORTDOC_RAG_CHATBOT_API_HOST=127.0.0.1`
+- `SUPPORTDOC_RAG_CHATBOT_API_PORT=9001`
+- `SUPPORTDOC_RAG_CHATBOT_CHUNKS_PATH=...`
+- `SUPPORTDOC_RAG_CHATBOT_FAISS_INDEX_PATH=...`
+- `SUPPORTDOC_RAG_CHATBOT_FAISS_INDEX_METADATA_PATH=...`
+- `SUPPORTDOC_RAG_CHATBOT_FAISS_ROW_MAPPING_PATH=...`
 
 ---
 

@@ -5,6 +5,14 @@ from .errors import (
     QueryPipelineError,
     QueryPipelineRuntimeError,
 )
+from .local_workflow import (
+    LocalApiPreflightReport,
+    LocalWorkflowError,
+    PreflightCheck,
+    ensure_local_api_ready,
+    evaluate_local_api_readiness,
+    render_local_api_preflight_report,
+)
 from .query_service import (
     DEFAULT_QUERY_MAX_GENERATION_ATTEMPTS,
     QueryOrchestrator,
@@ -26,6 +34,9 @@ __all__ = [
     "ArtifactDenseQueryRetriever",
     "DEFAULT_QUERY_MAX_GENERATION_ATTEMPTS",
     "FixtureQueryRetriever",
+    "LocalApiPreflightReport",
+    "LocalWorkflowError",
+    "PreflightCheck",
     "QueryOrchestrator",
     "QueryPipelineConfigurationError",
     "QueryPipelineError",
@@ -37,5 +48,8 @@ __all__ = [
     "close_cached_query_orchestrator",
     "create_query_orchestrator",
     "create_query_retriever",
+    "ensure_local_api_ready",
+    "evaluate_local_api_readiness",
     "get_request_query_orchestrator",
+    "render_local_api_preflight_report",
 ]
