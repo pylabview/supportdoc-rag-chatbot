@@ -1,0 +1,14 @@
+services:
+  supportdoc-api:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    image: supportdoc-rag-chatbot-api:local
+    init: true
+    environment:
+      SUPPORTDOC_LOCAL_API_MODE: fixture
+      SUPPORTDOC_LOCAL_API_HOST: 0.0.0.0
+      SUPPORTDOC_LOCAL_API_PORT: 9001
+      SUPPORTDOC_QUERY_GENERATION_MODE: fixture
+    ports:
+      - "9001:9001"
