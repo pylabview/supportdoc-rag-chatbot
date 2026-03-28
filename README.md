@@ -453,6 +453,8 @@ Because the repository does not commit local processed chunk / embedding / FAISS
 
 The intended deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The local MVP keeps artifacts simple so the deployment architecture can evolve without rewriting the ingestion or embedding steps.
 
+The canonical AWS deployment baseline for that path now lives in `docs/architecture/aws_deployment.md`, with the rendered diagram in `docs/diagrams/aws_deployment.md` and the versioned Mermaid source in `docs/diagrams/aws_deployment.mmd`.
+
 ---
 
 ## 11. Documentation Map / Roadmap
@@ -460,6 +462,8 @@ The intended deployment path is a FastAPI backend with a web frontend, persisten
 - `docs/process/git_workflow.md` — branch / PR / lockfile workflow
 - `docs/data/corpus.md` — corpus scope and licensing notes
 - `docs/diagrams/ingestion_pipeline.md` — ingestion pipeline overview
+- `docs/architecture/aws_deployment.md` — canonical AWS deployment baseline, deploy-now scope, and deferred options
+- `docs/diagrams/aws_deployment.md` — AWS deployment diagram
 - `docs/adr/` — architecture decisions and project rationale
 - `docs/process/hybrid_retrieval_baseline.md` — default hybrid baseline config and run command
 - `docs/process/retrieval_comparison_notes.md` — Epic 4 baseline comparison and provisional default selection
