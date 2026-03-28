@@ -324,8 +324,7 @@ uv sync --locked --extra dev-tools --extra faiss
 
 That command:
 
-- loads `.env` values automatically when present,
-- defaults to `SUPPORTDOC_RAG_CHATBOT_API_MODE=fixture`,
+- defaults to `SUPPORTDOC_LOCAL_API_MODE=fixture`,
 - runs a startup preflight before launching Uvicorn, and
 - starts `supportdoc_rag_chatbot.app.api:app` on `127.0.0.1:9001` by default.
 
@@ -352,35 +351,47 @@ curl -X POST http://127.0.0.1:9001/query \
 Artifact mode is for local users who already generated `chunks.jsonl` plus the FAISS artifact set. The startup script fails fast with clear guidance when any required files are missing.
 
 ```bash
-SUPPORTDOC_RAG_CHATBOT_API_MODE=artifact ./scripts/run-api-local.sh
+SUPPORTDOC_LOCAL_API_MODE=artifact ./scripts/run-api-local.sh
 ```
 
-Required artifact paths default to:
+Required artifact paths currently use the fixed local defaults from the retrieval modules:
 
 - `data/processed/chunks.jsonl`
 - `data/processed/indexes/faiss/chunk_index.faiss`
 - `data/processed/indexes/faiss/chunk_index.metadata.json`
 - `data/processed/indexes/faiss/chunk_index.row_mapping.json`
 
-You can override those paths in `.env` or with exported environment variables. See `.env.example` for the supported local startup settings.
+Artifact path overrides are not currently supported by `./scripts/run-api-local.sh` or `BackendSettings`, so local artifact-mode startup expects those default locations.
 
 ### Optional local configuration
 
-Copy `.env.example` to `.env` when you want to switch modes or override host / port / artifact paths:
+Set shell-wrapper options with flags or exported environment variables:
+
+- `SUPPORTDOC_LOCAL_API_MODE=fixture|artifact`
+- `SUPPORTDOC_LOCAL_API_HOST=127.0.0.1`
+- `SUPPORTDOC_LOCAL_API_PORT=9001`
+- `SUPPORTDOC_LOCAL_API_RELOAD=true|false`
+
+Backend settings are loaded by `src/supportdoc_rag_chatbot/config.py` and use these environment variable names:
+
+- `SUPPORTDOC_API_TITLE=SupportDoc RAG Chatbot API`
+- `SUPPORTDOC_ENV=local`
+- `SUPPORTDOC_API_VERSION=0.1.0`
+- `SUPPORTDOC_API_DOCS_URL=/docs`
+- `SUPPORTDOC_API_REDOC_URL=/redoc`
+- `SUPPORTDOC_QUERY_RETRIEVAL_MODE=fixture|artifact`
+- `SUPPORTDOC_QUERY_GENERATION_MODE=fixture|http`
+- `SUPPORTDOC_QUERY_GENERATION_BASE_URL=http://127.0.0.1:8080`
+- `SUPPORTDOC_QUERY_GENERATION_TIMEOUT_SECONDS=30`
+- `SUPPORTDOC_QUERY_TOP_K=3`
+
+For example, to point the API at an HTTP generation backend:
 
 ```bash
-cp .env.example .env
+SUPPORTDOC_QUERY_GENERATION_MODE=http \
+SUPPORTDOC_QUERY_GENERATION_BASE_URL=http://127.0.0.1:8080 \
+./scripts/run-api-local.sh
 ```
-
-The most useful variables are:
-
-- `SUPPORTDOC_RAG_CHATBOT_API_MODE=fixture|artifact`
-- `SUPPORTDOC_RAG_CHATBOT_API_HOST=127.0.0.1`
-- `SUPPORTDOC_RAG_CHATBOT_API_PORT=9001`
-- `SUPPORTDOC_RAG_CHATBOT_CHUNKS_PATH=...`
-- `SUPPORTDOC_RAG_CHATBOT_FAISS_INDEX_PATH=...`
-- `SUPPORTDOC_RAG_CHATBOT_FAISS_INDEX_METADATA_PATH=...`
-- `SUPPORTDOC_RAG_CHATBOT_FAISS_ROW_MAPPING_PATH=...`
 
 ---
 
@@ -442,6 +453,8 @@ Because the repository does not commit local processed chunk / embedding / FAISS
 
 The intended deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The local MVP keeps artifacts simple so the deployment architecture can evolve without rewriting the ingestion or embedding steps.
 
+The canonical AWS deployment baseline for that path now lives in `docs/architecture/aws_deployment.md`, with the rendered diagram in `docs/diagrams/aws_deployment.md` and the versioned Mermaid source in `docs/diagrams/aws_deployment.mmd`.
+
 ---
 
 ## 11. Documentation Map / Roadmap
@@ -449,6 +462,8 @@ The intended deployment path is a FastAPI backend with a web frontend, persisten
 - `docs/process/git_workflow.md` — branch / PR / lockfile workflow
 - `docs/data/corpus.md` — corpus scope and licensing notes
 - `docs/diagrams/ingestion_pipeline.md` — ingestion pipeline overview
+- `docs/architecture/aws_deployment.md` — canonical AWS deployment baseline, deploy-now scope, and deferred options
+- `docs/diagrams/aws_deployment.md` — AWS deployment diagram
 - `docs/adr/` — architecture decisions and project rationale
 - `docs/process/hybrid_retrieval_baseline.md` — default hybrid baseline config and run command
 - `docs/process/retrieval_comparison_notes.md` — Epic 4 baseline comparison and provisional default selection
