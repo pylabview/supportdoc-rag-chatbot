@@ -395,6 +395,84 @@ SUPPORTDOC_QUERY_GENERATION_BASE_URL=http://127.0.0.1:8080 \
 
 ---
 
+## 7B. Containerized Local API Smoke Workflow
+
+The repository now includes a first-pass backend container package for the local API shell. It is intentionally small and reuses the existing `scripts/run-api-local.sh` startup path instead of introducing a parallel container-only boot flow.
+
+### Build the backend image
+
+```bash
+docker build -f docker/backend.Dockerfile -t supportdoc-rag-chatbot-api:local .
+```
+
+The image:
+
+- installs the locked runtime dependencies with `uv sync --locked --no-dev`,
+- defaults to `SUPPORTDOC_LOCAL_API_MODE=fixture`,
+- starts the existing local API shell on `0.0.0.0:9001`,
+- exposes port `9001`,
+- defines a `/healthz` container healthcheck, and
+- runs as the non-root `supportdoc` user.
+
+### Run the backend container directly
+
+```bash
+docker run --rm -p 9001:9001 supportdoc-rag-chatbot-api:local
+```
+
+### Run the local smoke stack with Docker Compose
+
+```bash
+docker compose up --build -d
+docker compose ps
+```
+
+Example smoke calls against the running container:
+
+```bash
+curl http://127.0.0.1:9001/healthz
+curl http://127.0.0.1:9001/readyz
+curl -X POST http://127.0.0.1:9001/query \
+  -H 'content-type: application/json' \
+  -d '{"question":"What is a Pod?"}'
+```
+
+Stop the local container stack when you are done:
+
+```bash
+docker compose down
+```
+
+### Container environment variables
+
+The compose service uses the same startup wrapper and backend settings already documented above. The default local container smoke path sets:
+
+- `SUPPORTDOC_LOCAL_API_MODE=fixture`
+- `SUPPORTDOC_LOCAL_API_HOST=0.0.0.0`
+- `SUPPORTDOC_LOCAL_API_PORT=9001`
+- `SUPPORTDOC_QUERY_GENERATION_MODE=fixture`
+
+You can still override the backend-facing settings from `src/supportdoc_rag_chatbot/config.py` when needed, for example:
+
+```bash
+docker run --rm -p 9001:9001 \
+  -e SUPPORTDOC_API_TITLE=SupportDoc Container API \
+  -e SUPPORTDOC_ENV=container-local \
+  supportdoc-rag-chatbot-api:local
+```
+
+### Artifact mode status
+
+Artifact mode inside the container image is deferred for this first packaging pass. The checked-in image and compose service are fixture-mode only on purpose:
+
+- the image installs the baseline API runtime needed for fixture-mode smoke testing,
+- the compose workflow does not yet define a canonical mount contract for local FAISS artifacts, and
+- the container smoke path is meant to validate bootability, `/healthz`, `/readyz`, and the stable `/query` response contract before production-style deployment work begins.
+
+If artifact-mode container support is needed later, it should be added as an explicit follow-on task with a documented artifact mount/input contract rather than inferred ad hoc.
+
+---
+
 ## 8. Citations and Refusal Behavior
 
 The repository now includes a canonical trust-layer response contract under `src/supportdoc_rag_chatbot/app/schemas/trust.py`. That contract defines structured supported answers, structured refusals, restricted refusal reason codes, and deterministic JSON Schema export under `docs/contracts/`.
