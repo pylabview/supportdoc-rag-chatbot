@@ -7,8 +7,12 @@ from fastapi.testclient import TestClient
 
 from supportdoc_rag_chatbot.app.api import create_app
 from supportdoc_rag_chatbot.app.client import GenerationBackendMode
-from supportdoc_rag_chatbot.app.core import LocalWorkflowError, ensure_local_api_ready, evaluate_local_api_readiness
-from supportdoc_rag_chatbot.app.core import RetrievalBackendMode
+from supportdoc_rag_chatbot.app.core import (
+    LocalWorkflowError,
+    RetrievalBackendMode,
+    ensure_local_api_ready,
+    evaluate_local_api_readiness,
+)
 from supportdoc_rag_chatbot.config import BackendSettings
 
 FIXTURE_SETTINGS = BackendSettings(
@@ -36,7 +40,9 @@ def test_fixture_mode_local_smoke_api_returns_health_ready_and_query() -> None:
         assert payload["citations"][0]["marker"] == "[1]"
 
 
-def test_artifact_mode_preflight_reports_missing_files_from_clean_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_artifact_mode_preflight_reports_missing_files_from_clean_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(tmp_path)
 
     report = evaluate_local_api_readiness(ARTIFACT_SETTINGS)
@@ -46,7 +52,9 @@ def test_artifact_mode_preflight_reports_missing_files_from_clean_checkout(tmp_p
     assert report.missing_paths
 
 
-def test_artifact_mode_preflight_fails_fast_with_clear_guidance(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_artifact_mode_preflight_fails_fast_with_clear_guidance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(tmp_path)
 
     with pytest.raises(LocalWorkflowError, match="SUPPORTDOC_QUERY_RETRIEVAL_MODE=fixture"):
