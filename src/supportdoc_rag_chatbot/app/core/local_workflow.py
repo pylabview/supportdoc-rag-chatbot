@@ -60,9 +60,13 @@ def evaluate_local_api_readiness(settings: BackendSettings) -> LocalApiPreflight
         ]
 
     if settings.query_generation_mode is GenerationBackendMode.HTTP:
-        base_url = settings.query_generation_base_url.strip() if settings.query_generation_base_url else ""
+        base_url = (
+            settings.query_generation_base_url.strip() if settings.query_generation_base_url else ""
+        )
         if not base_url:
-            checks.append(PreflightCheck(name="generation_base_url", path=Path("(unset)"), exists=False))
+            checks.append(
+                PreflightCheck(name="generation_base_url", path=Path("(unset)"), exists=False)
+            )
 
     return LocalApiPreflightReport(
         mode=settings.query_retrieval_mode.value,
@@ -77,7 +81,9 @@ def ensure_local_api_ready(settings: BackendSettings) -> LocalApiPreflightReport
     if report.is_ready:
         return report
 
-    missing_lines = "\n".join(f"- {check.name}: {check.path}" for check in report.checks if not check.exists)
+    missing_lines = "\n".join(
+        f"- {check.name}: {check.path}" for check in report.checks if not check.exists
+    )
     if settings.query_retrieval_mode is RetrievalBackendMode.ARTIFACT:
         raise LocalWorkflowError(
             "Artifact mode requires local retrieval artifacts before the API can start.\n"
@@ -86,7 +92,10 @@ def ensure_local_api_ready(settings: BackendSettings) -> LocalApiPreflightReport
             "SUPPORTDOC_QUERY_RETRIEVAL_MODE=fixture for repo-only smoke testing."
         )
 
-    if settings.query_generation_mode is GenerationBackendMode.HTTP and not settings.query_generation_base_url:
+    if (
+        settings.query_generation_mode is GenerationBackendMode.HTTP
+        and not settings.query_generation_base_url
+    ):
         raise LocalWorkflowError(
             "HTTP generation mode requires SUPPORTDOC_QUERY_GENERATION_BASE_URL to be set.\n"
             f"Missing inputs:\n{missing_lines}"
