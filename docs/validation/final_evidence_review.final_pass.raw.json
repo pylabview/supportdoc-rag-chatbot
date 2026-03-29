@@ -1,0 +1,108 @@
+{
+  "backend_path": {
+    "api_surface": "FastAPI POST /query",
+    "artifact_fixture": "two-chunk Pods excerpt with deterministic fake embedder",
+    "generation_mode": "fixture",
+    "retrieval_mode": "artifact",
+    "retriever_name": "dense-artifact-retriever"
+  },
+  "cases": [
+    {
+      "case_id": "pod-definition-supported",
+      "expected_outcome": "supported",
+      "expected_reason_code": null,
+      "question": "What is a Pod?",
+      "response": {
+        "citations": [
+          {
+            "chunk_id": "content-en-docs-concepts-workloads-pods-pods__chunk-0001",
+            "doc_id": "content-en-docs-concepts-workloads-pods-pods",
+            "end_offset": 118,
+            "marker": "[1]",
+            "start_offset": 0
+          }
+        ],
+        "final_answer": "A Pod is the smallest deployable unit in Kubernetes and can run one or more containers that share network and storage resources [1].",
+        "refusal": {
+          "is_refusal": false,
+          "message": null,
+          "reason_code": null
+        }
+      },
+      "retrieved": [
+        {
+          "chunk_id": "content-en-docs-concepts-workloads-pods-pods__chunk-0001",
+          "rank": 1,
+          "score": 0.997519
+        },
+        {
+          "chunk_id": "content-en-docs-concepts-workloads-pods-pods__chunk-0002",
+          "rank": 2,
+          "score": 0.886979
+        }
+      ]
+    },
+    {
+      "case_id": "pod-storage-insufficient-evidence",
+      "expected_outcome": "refusal",
+      "expected_reason_code": "insufficient_evidence",
+      "question": "What storage resources do Pods share?",
+      "response": {
+        "citations": [],
+        "final_answer": "I can’t answer that confidently from the approved support corpus.",
+        "refusal": {
+          "is_refusal": true,
+          "message": "I can’t answer that confidently from the approved support corpus.",
+          "reason_code": "insufficient_evidence"
+        }
+      },
+      "retrieved": [
+        {
+          "chunk_id": "content-en-docs-concepts-workloads-pods-pods__chunk-0001",
+          "rank": 1,
+          "score": 0.853553
+        },
+        {
+          "chunk_id": "content-en-docs-concepts-workloads-pods-pods__chunk-0002",
+          "rank": 2,
+          "score": 0.5
+        }
+      ]
+    },
+    {
+      "case_id": "bios-reset-no-relevant-docs",
+      "expected_outcome": "refusal",
+      "expected_reason_code": "no_relevant_docs",
+      "question": "How do I reset my laptop BIOS?",
+      "response": {
+        "citations": [],
+        "final_answer": "I can’t answer that from the approved support corpus.",
+        "refusal": {
+          "is_refusal": true,
+          "message": "I can’t answer that from the approved support corpus.",
+          "reason_code": "no_relevant_docs"
+        }
+      },
+      "retrieved": [
+        {
+          "chunk_id": "content-en-docs-concepts-workloads-pods-pods__chunk-0002",
+          "rank": 1,
+          "score": 0.146447
+        },
+        {
+          "chunk_id": "content-en-docs-concepts-workloads-pods-pods__chunk-0001",
+          "rank": 2,
+          "score": 0.0
+        }
+      ]
+    }
+  ],
+  "review_set_path": "data/evaluation/final_evidence_review.k8s-9e1e32b.v1.jsonl",
+  "run_label": "final_pass",
+  "snapshot_id": "k8s-9e1e32b",
+  "summary": {
+    "case_count": 3,
+    "refusal_case_count": 2,
+    "supported_case_count": 1
+  }
+}

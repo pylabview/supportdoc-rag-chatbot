@@ -1,0 +1,15 @@
+{
+  "artifact_fixture_notes": "The reviewed run uses a deterministic two-chunk Pods excerpt derived from the same snapshot and chunk IDs already exercised by the trust fixtures.",
+  "case_count": 3,
+  "dataset_name": "final_evidence_review",
+  "dataset_version": "v1",
+  "final_pass_raw_output_path": "docs/validation/final_evidence_review.final_pass.raw.json",
+  "first_pass_raw_output_path": "docs/validation/final_evidence_review.first_pass.raw.json",
+  "refusal_case_count": 2,
+  "results_template_path": "docs/validation/final_evidence_review_results.template.md",
+  "review_report_path": "docs/validation/final_evidence_review.md",
+  "review_set_path": "data/evaluation/final_evidence_review.k8s-9e1e32b.v1.jsonl",
+  "rubric_path": "docs/validation/final_evidence_review_rubric.md",
+  "snapshot_id": "k8s-9e1e32b",
+  "supported_case_count": 1
+}
