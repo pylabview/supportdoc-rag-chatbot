@@ -9,6 +9,8 @@ It does two things:
 
 The baseline is intentionally opinionated so later infra work can build against one path instead of several equal alternatives.
 
+Companion cost and operations notes for the same baseline live in `docs/ops/cost_and_ops.md`.
+
 ## Baseline decision summary
 
 The capstone MVP will use this default AWS path:
