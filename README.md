@@ -414,7 +414,19 @@ The image:
 - defines a `/healthz` container healthcheck, and
 - runs as the non-root `supportdoc` user.
 
+### Canonical runtime smoke command
+
+The CI build smoke proves that `docker/backend.Dockerfile` still builds. The runtime smoke below is the canonical **packaged-runtime** proof: it builds the checked-in image, starts it in fixture mode with `docker run`, waits for the container healthcheck, validates `GET /healthz` and `GET /readyz`, then checks one supported and one refusal `POST /query` response against the canonical `QueryResponse` contract.
+
+```bash
+./scripts/smoke-container-runtime.sh
+```
+
+The runtime smoke always removes the container on exit and prints container logs plus `docker inspect` state/port details when a check fails. It stays intentionally fixture-mode only and does not reopen artifact-mode-in-container scope.
+
 ### Run the backend container directly
+
+If you only want to boot the container manually without the full runtime validation wrapper, you can still run:
 
 ```bash
 docker run --rm -p 9001:9001 supportdoc-rag-chatbot-api:local
@@ -422,12 +434,14 @@ docker run --rm -p 9001:9001 supportdoc-rag-chatbot-api:local
 
 ### Run the local smoke stack with Docker Compose
 
+`docker compose` remains optional for manual local stack management, but the canonical runtime smoke path for MVP validation is the script above.
+
 ```bash
 docker compose up --build -d
 docker compose ps
 ```
 
-Example smoke calls against the running container:
+Example manual smoke calls against the running container:
 
 ```bash
 curl http://127.0.0.1:9001/healthz
