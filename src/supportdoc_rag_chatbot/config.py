@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from importlib.metadata import PackageNotFoundError, version
-from typing import Mapping
+from typing import Literal, Mapping
 
 from dotenv import load_dotenv
 from fastapi import Request
@@ -22,6 +22,7 @@ DEFAULT_API_REDOC_URL = "/redoc"
 DEFAULT_QUERY_RETRIEVAL_MODE = RetrievalBackendMode.FIXTURE
 DEFAULT_QUERY_GENERATION_MODE = GenerationBackendMode.FIXTURE
 DEFAULT_QUERY_TOP_K = 3
+DEFAULT_QUERY_ARTIFACT_EMBEDDER_MODE: Literal["local", "fixture"] = "local"
 
 
 class BackendSettings(BaseModel):
@@ -39,6 +40,14 @@ class BackendSettings(BaseModel):
     query_generation_base_url: str | None = None
     query_generation_timeout_seconds: float = Field(default=DEFAULT_GENERATION_TIMEOUT_SECONDS)
     query_top_k: int = Field(default=DEFAULT_QUERY_TOP_K)
+    query_artifact_chunks_path: str | None = None
+    query_artifact_index_path: str | None = None
+    query_artifact_index_metadata_path: str | None = None
+    query_artifact_row_mapping_path: str | None = None
+    query_artifact_embedder_mode: Literal["local", "fixture"] = Field(
+        default=DEFAULT_QUERY_ARTIFACT_EMBEDDER_MODE
+    )
+    query_artifact_embedder_fixture_path: str | None = None
 
     @field_validator(
         "app_name",
@@ -54,13 +63,28 @@ class BackendSettings(BaseModel):
             raise ValueError(f"{info.field_name} must not be blank")
         return normalized
 
-    @field_validator("query_generation_base_url")
+    @field_validator(
+        "query_generation_base_url",
+        "query_artifact_chunks_path",
+        "query_artifact_index_path",
+        "query_artifact_index_metadata_path",
+        "query_artifact_row_mapping_path",
+        "query_artifact_embedder_fixture_path",
+    )
     @classmethod
-    def _validate_optional_base_url(cls, value: str | None) -> str | None:
+    def _validate_optional_string(cls, value: str | None) -> str | None:
         if value is None:
             return None
         normalized = value.strip()
         return normalized or None
+
+    @field_validator("query_artifact_embedder_mode")
+    @classmethod
+    def _validate_artifact_embedder_mode(cls, value: str) -> str:
+        normalized = value.strip().casefold()
+        if normalized not in {"local", "fixture"}:
+            raise ValueError("query_artifact_embedder_mode must be 'local' or 'fixture'")
+        return normalized
 
     @field_validator("query_generation_timeout_seconds")
     @classmethod
@@ -133,6 +157,31 @@ def load_backend_settings(environ: Mapping[str, str] | None = None) -> BackendSe
             "SUPPORTDOC_QUERY_TOP_K",
             default=DEFAULT_QUERY_TOP_K,
         ),
+        query_artifact_chunks_path=_read_env_optional_string(
+            source,
+            "SUPPORTDOC_QUERY_ARTIFACT_CHUNKS_PATH",
+        ),
+        query_artifact_index_path=_read_env_optional_string(
+            source,
+            "SUPPORTDOC_QUERY_ARTIFACT_INDEX_PATH",
+        ),
+        query_artifact_index_metadata_path=_read_env_optional_string(
+            source,
+            "SUPPORTDOC_QUERY_ARTIFACT_INDEX_METADATA_PATH",
+        ),
+        query_artifact_row_mapping_path=_read_env_optional_string(
+            source,
+            "SUPPORTDOC_QUERY_ARTIFACT_ROW_MAPPING_PATH",
+        ),
+        query_artifact_embedder_mode=_read_env_string(
+            source,
+            "SUPPORTDOC_QUERY_ARTIFACT_EMBEDDER_MODE",
+            default=DEFAULT_QUERY_ARTIFACT_EMBEDDER_MODE,
+        ),
+        query_artifact_embedder_fixture_path=_read_env_optional_string(
+            source,
+            "SUPPORTDOC_QUERY_ARTIFACT_EMBEDDER_FIXTURE_PATH",
+        ),
     )
 
 
@@ -196,6 +245,7 @@ __all__ = [
     "DEFAULT_API_ENVIRONMENT",
     "DEFAULT_API_REDOC_URL",
     "DEFAULT_API_TITLE",
+    "DEFAULT_QUERY_ARTIFACT_EMBEDDER_MODE",
     "DEFAULT_QUERY_GENERATION_MODE",
     "DEFAULT_QUERY_RETRIEVAL_MODE",
     "DEFAULT_QUERY_TOP_K",

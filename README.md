@@ -348,20 +348,52 @@ curl -X POST http://127.0.0.1:9001/query \
 
 ### Artifact mode
 
-Artifact mode is for local users who already generated `chunks.jsonl` plus the FAISS artifact set. The startup script fails fast with clear guidance when any required files are missing.
+Artifact mode is for local users who already generated `chunks.jsonl` plus the FAISS artifact set. The startup script still fails fast with clear guidance when any required files are missing, but the backend now also supports explicit artifact-path overrides so smoke fixtures can stay isolated from a developer's `data/processed/` state.
 
 ```bash
 SUPPORTDOC_LOCAL_API_MODE=artifact ./scripts/run-api-local.sh
 ```
 
-Required artifact paths currently use the fixed local defaults from the retrieval modules:
+Default artifact locations remain:
 
 - `data/processed/chunks.jsonl`
 - `data/processed/indexes/faiss/chunk_index.faiss`
 - `data/processed/indexes/faiss/chunk_index.metadata.json`
 - `data/processed/indexes/faiss/chunk_index.row_mapping.json`
 
-Artifact path overrides are not currently supported by `./scripts/run-api-local.sh` or `BackendSettings`, so local artifact-mode startup expects those default locations.
+Optional artifact override environment variables:
+
+- `SUPPORTDOC_QUERY_ARTIFACT_CHUNKS_PATH`
+- `SUPPORTDOC_QUERY_ARTIFACT_INDEX_PATH`
+- `SUPPORTDOC_QUERY_ARTIFACT_INDEX_METADATA_PATH`
+- `SUPPORTDOC_QUERY_ARTIFACT_ROW_MAPPING_PATH`
+
+By default, artifact mode uses the local embedding model recorded in the FAISS metadata. For the deterministic smoke suite only, the backend also supports a lightweight fixture embedder override:
+
+- `SUPPORTDOC_QUERY_ARTIFACT_EMBEDDER_MODE=local|fixture`
+- `SUPPORTDOC_QUERY_ARTIFACT_EMBEDDER_FIXTURE_PATH=/absolute/path/to/query_embedding_fixture.json`
+
+### Canonical artifact-mode smoke command
+
+Run the artifact-backed local API smoke path with a tiny deterministic fixture:
+
+```bash
+./scripts/smoke-artifact-api.sh
+```
+
+That command:
+
+- creates a temporary `chunks.jsonl` + FAISS fixture,
+- starts `./scripts/run-api-local.sh --mode artifact` with explicit artifact-path overrides,
+- uses the smoke-only fixture embedder so no long-running model server or local embedding stack is required,
+- validates `GET /healthz`, `GET /readyz`, and supported + refusal `POST /query` responses against the canonical `QueryResponse` contract, and
+- removes the temporary fixture and background API process on exit.
+
+Prerequisite:
+
+```bash
+uv sync --locked --extra dev-tools --extra faiss
+```
 
 ### Optional local configuration
 
@@ -384,6 +416,12 @@ Backend settings are loaded by `src/supportdoc_rag_chatbot/config.py` and use th
 - `SUPPORTDOC_QUERY_GENERATION_BASE_URL=http://127.0.0.1:8080`
 - `SUPPORTDOC_QUERY_GENERATION_TIMEOUT_SECONDS=30`
 - `SUPPORTDOC_QUERY_TOP_K=3`
+- `SUPPORTDOC_QUERY_ARTIFACT_CHUNKS_PATH=/absolute/path/to/chunks.jsonl`
+- `SUPPORTDOC_QUERY_ARTIFACT_INDEX_PATH=/absolute/path/to/chunk_index.faiss`
+- `SUPPORTDOC_QUERY_ARTIFACT_INDEX_METADATA_PATH=/absolute/path/to/chunk_index.metadata.json`
+- `SUPPORTDOC_QUERY_ARTIFACT_ROW_MAPPING_PATH=/absolute/path/to/chunk_index.row_mapping.json`
+- `SUPPORTDOC_QUERY_ARTIFACT_EMBEDDER_MODE=local|fixture`
+- `SUPPORTDOC_QUERY_ARTIFACT_EMBEDDER_FIXTURE_PATH=/absolute/path/to/query_embedding_fixture.json`
 
 For example, to point the API at an HTTP generation backend:
 
@@ -414,7 +452,19 @@ The image:
 - defines a `/healthz` container healthcheck, and
 - runs as the non-root `supportdoc` user.
 
+### Canonical runtime smoke command
+
+The CI build smoke proves that `docker/backend.Dockerfile` still builds. The runtime smoke below is the canonical **packaged-runtime** proof: it builds the checked-in image, starts it in fixture mode with `docker run`, waits for the container healthcheck, validates `GET /healthz` and `GET /readyz`, then checks one supported and one refusal `POST /query` response against the canonical `QueryResponse` contract.
+
+```bash
+./scripts/smoke-container-runtime.sh
+```
+
+The runtime smoke always removes the container on exit and prints container logs plus `docker inspect` state/port details when a check fails. It stays intentionally fixture-mode only and does not reopen artifact-mode-in-container scope.
+
 ### Run the backend container directly
+
+If you only want to boot the container manually without the full runtime validation wrapper, you can still run:
 
 ```bash
 docker run --rm -p 9001:9001 supportdoc-rag-chatbot-api:local
@@ -422,12 +472,14 @@ docker run --rm -p 9001:9001 supportdoc-rag-chatbot-api:local
 
 ### Run the local smoke stack with Docker Compose
 
+`docker compose` remains optional for manual local stack management, but the canonical runtime smoke path for MVP validation is the script above.
+
 ```bash
 docker compose up --build -d
 docker compose ps
 ```
 
-Example smoke calls against the running container:
+Example manual smoke calls against the running container:
 
 ```bash
 curl http://127.0.0.1:9001/healthz

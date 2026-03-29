@@ -11,6 +11,7 @@ from supportdoc_rag_chatbot.app.services.policy_types import RetrievalScoreNorma
 from supportdoc_rag_chatbot.evaluation import RetrievalHit
 from supportdoc_rag_chatbot.ingestion.schemas import ChunkRecord
 from supportdoc_rag_chatbot.retrieval.embeddings import DEFAULT_BATCH_SIZE, DEFAULT_DEVICE
+from supportdoc_rag_chatbot.retrieval.embeddings.fixture import load_fixture_embedder
 from supportdoc_rag_chatbot.retrieval.embeddings.job import load_chunk_records
 from supportdoc_rag_chatbot.retrieval.embeddings.models import DenseEmbedder, create_local_embedder
 from supportdoc_rag_chatbot.retrieval.indexes import (
@@ -35,6 +36,10 @@ class RetrievalBackendMode(StrEnum):
 
     FIXTURE = "fixture"
     ARTIFACT = "artifact"
+
+
+_DEFAULT_ARTIFACT_EMBEDDER_MODE = "local"
+_VALID_ARTIFACT_EMBEDDER_MODES = {"local", "fixture"}
 
 
 @dataclass(slots=True, frozen=True)
@@ -168,6 +173,15 @@ class RetrievedEvidenceBundle:
 
     def to_citation_contexts(self) -> list[RetrievedChunkCitationContext]:
         return [chunk.to_citation_context() for chunk in self.chunks]
+
+
+def _normalize_artifact_embedder_mode(mode: str) -> str:
+    normalized = _validate_required_string(mode, field_name="embedder_mode").casefold()
+    if normalized not in _VALID_ARTIFACT_EMBEDDER_MODES:
+        raise ValueError(
+            "embedder_mode must be one of: " + ", ".join(sorted(_VALID_ARTIFACT_EMBEDDER_MODES))
+        )
+    return normalized
 
 
 def _normalize_question(question: str) -> str:
@@ -340,13 +354,15 @@ class FixtureQueryRetriever:
 class ArtifactDenseQueryRetriever:
     """Artifact-backed dense retrieval adapter for the backend query pipeline."""
 
-    index_path: Path = DEFAULT_FAISS_INDEX_PATH
-    metadata_path: Path = DEFAULT_FAISS_METADATA_PATH
+    index_path: Path | None = DEFAULT_FAISS_INDEX_PATH
+    metadata_path: Path | None = DEFAULT_FAISS_METADATA_PATH
     row_mapping_path: Path | None = DEFAULT_FAISS_ROW_MAPPING_PATH
     chunks_path: Path | None = None
     model_name: str | None = None
     device: str = DEFAULT_DEVICE
     batch_size: int = DEFAULT_BATCH_SIZE
+    embedder_mode: str = _DEFAULT_ARTIFACT_EMBEDDER_MODE
+    embedder_fixture_path: Path | None = None
     name: str = "dense-artifact-retriever"
     retriever_type: str = "dense-artifact"
     embedder: DenseEmbedder | None = None
@@ -354,6 +370,16 @@ class ArtifactDenseQueryRetriever:
     _resolved_backend: FaissDenseIndexBackend | None = field(default=None, init=False, repr=False)
     _resolved_embedder: DenseEmbedder | None = field(default=None, init=False, repr=False)
     _chunk_map: dict[str, ChunkRecord] = field(default_factory=dict, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self.index_path = Path(self.index_path or DEFAULT_FAISS_INDEX_PATH)
+        self.metadata_path = Path(self.metadata_path or DEFAULT_FAISS_METADATA_PATH)
+        self.row_mapping_path = Path(self.row_mapping_path or DEFAULT_FAISS_ROW_MAPPING_PATH)
+        self.chunks_path = Path(self.chunks_path) if self.chunks_path is not None else None
+        self.embedder_fixture_path = (
+            Path(self.embedder_fixture_path) if self.embedder_fixture_path is not None else None
+        )
+        self.embedder_mode = _normalize_artifact_embedder_mode(self.embedder_mode)
 
     @property
     def backend_mode(self) -> RetrievalBackendMode:
@@ -369,6 +395,10 @@ class ArtifactDenseQueryRetriever:
             "model_name": self.model_name,
             "device": self.device,
             "batch_size": self.batch_size,
+            "embedder_mode": self.embedder_mode,
+            "embedder_fixture_path": (
+                str(self.embedder_fixture_path) if self.embedder_fixture_path else None
+            ),
             "score_normalization": RetrievalScoreNormalization.UNIT_INTERVAL.value,
         }
 
@@ -468,8 +498,27 @@ class ArtifactDenseQueryRetriever:
     def _ensure_embedder_loaded(self, backend: FaissDenseIndexBackend) -> DenseEmbedder:
         if self._resolved_embedder is not None:
             return self._resolved_embedder
+        if self.embedder is not None:
+            self._resolved_embedder = self.embedder
+            return self._resolved_embedder
+
+        if self.embedder_mode == "fixture":
+            if self.embedder_fixture_path is None:
+                raise QueryPipelineConfigurationError(
+                    "Artifact retrieval fixture embedder mode requires an embedder fixture path."
+                )
+            try:
+                self._resolved_embedder = load_fixture_embedder(Path(self.embedder_fixture_path))
+            except FileNotFoundError as exc:
+                raise QueryPipelineConfigurationError(str(exc)) from exc
+            except ValueError as exc:
+                raise QueryPipelineConfigurationError(
+                    f"Artifact retrieval fixture embedder is invalid: {exc}"
+                ) from exc
+            return self._resolved_embedder
+
         try:
-            self._resolved_embedder = self.embedder or create_local_embedder(
+            self._resolved_embedder = create_local_embedder(
                 model_name=(self.model_name or backend.metadata.embedding_model_name),
                 device=self.device,
                 batch_size=self.batch_size,

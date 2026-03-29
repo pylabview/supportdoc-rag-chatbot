@@ -53,11 +53,38 @@ def evaluate_local_api_readiness(settings: BackendSettings) -> LocalApiPreflight
         ]
     else:
         checks = [
-            _check_path("chunks", DEFAULT_CHUNKS_PATH),
-            _check_path("faiss_index", DEFAULT_FAISS_INDEX_PATH),
-            _check_path("faiss_index_metadata", DEFAULT_FAISS_METADATA_PATH),
-            _check_path("faiss_row_mapping", DEFAULT_FAISS_ROW_MAPPING_PATH),
+            _check_path(
+                "chunks", _artifact_path(settings.query_artifact_chunks_path, DEFAULT_CHUNKS_PATH)
+            ),
+            _check_path(
+                "faiss_index",
+                _artifact_path(settings.query_artifact_index_path, DEFAULT_FAISS_INDEX_PATH),
+            ),
+            _check_path(
+                "faiss_index_metadata",
+                _artifact_path(
+                    settings.query_artifact_index_metadata_path,
+                    DEFAULT_FAISS_METADATA_PATH,
+                ),
+            ),
+            _check_path(
+                "faiss_row_mapping",
+                _artifact_path(
+                    settings.query_artifact_row_mapping_path,
+                    DEFAULT_FAISS_ROW_MAPPING_PATH,
+                ),
+            ),
         ]
+        if settings.query_artifact_embedder_mode == "fixture":
+            checks.append(
+                _check_path(
+                    "artifact_embedder_fixture",
+                    _artifact_path(
+                        settings.query_artifact_embedder_fixture_path,
+                        Path("(unset)"),
+                    ),
+                )
+            )
 
     if settings.query_generation_mode is GenerationBackendMode.HTTP:
         base_url = (
@@ -119,6 +146,12 @@ def render_local_api_preflight_report(report: LocalApiPreflightReport) -> str:
 def _check_path(name: str, path: Path | str) -> PreflightCheck:
     resolved = Path(path)
     return PreflightCheck(name=name, path=resolved, exists=resolved.exists())
+
+
+def _artifact_path(value: str | None, default: Path) -> Path:
+    if value is None:
+        return default
+    return Path(value)
 
 
 __all__ = [

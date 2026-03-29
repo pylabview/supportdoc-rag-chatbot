@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from fastapi import Request
@@ -283,8 +284,22 @@ class QueryOrchestrator:
 def create_query_orchestrator(*, settings: BackendSettings) -> QueryOrchestrator:
     """Create the canonical backend query orchestrator from backend settings."""
 
+    retriever_kwargs: dict[str, Any] = {}
+    if (
+        settings.query_retrieval_mode is not None
+        and settings.query_retrieval_mode.value == "artifact"
+    ):
+        retriever_kwargs = {
+            "chunks_path": _optional_path(settings.query_artifact_chunks_path),
+            "index_path": _optional_path(settings.query_artifact_index_path),
+            "metadata_path": _optional_path(settings.query_artifact_index_metadata_path),
+            "row_mapping_path": _optional_path(settings.query_artifact_row_mapping_path),
+            "embedder_mode": settings.query_artifact_embedder_mode,
+            "embedder_fixture_path": _optional_path(settings.query_artifact_embedder_fixture_path),
+        }
+
     try:
-        retriever = create_query_retriever(mode=settings.query_retrieval_mode)
+        retriever = create_query_retriever(mode=settings.query_retrieval_mode, **retriever_kwargs)
     except ValueError as exc:
         raise QueryPipelineConfigurationError(
             f"Invalid retrieval backend configuration: {exc}"
@@ -350,6 +365,12 @@ def _render_generation_failure(failure) -> str:
         f"Generation backend failed with {failure.code.value}: {failure.message} "
         f"(backend={failure.backend_name})"
     )
+
+
+def _optional_path(value: str | None) -> Path | None:
+    if value is None:
+        return None
+    return Path(value)
 
 
 def _validate_required_string(value: str, *, field_name: str) -> str:
