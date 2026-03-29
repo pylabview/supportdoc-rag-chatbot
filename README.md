@@ -490,7 +490,7 @@ Evaluation work is planned in two stages:
 1. retrieval smoke tests and baseline relevance checks,
 2. end-to-end answer quality, citation support, and refusal correctness.
 
-Results will be documented under the evaluation package and in future project reports as those baselines are implemented.
+Retrieval-only artifacts live under `data/evaluation/`. The current artifact-backed MVP trust pass now lives under `docs/validation/final_evidence_review.md`, with the versioned review set in `data/evaluation/final_evidence_review.k8s-9e1e32b.v1.jsonl`.
 
 ## 9A. Development Retrieval QA Set
 
