@@ -1,0 +1,60 @@
+name: container-smoke
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  container-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      # Local equivalent:
+      #   docker compose up --build -d
+      #   curl http://127.0.0.1:9001/healthz
+      #   curl http://127.0.0.1:9001/readyz
+      - name: Build backend image
+        run: docker build -f docker/backend.Dockerfile -t supportdoc-rag-chatbot-api:ci .
+
+      - name: Start backend container in fixture mode
+        run: |
+          docker run -d --rm \
+            --name supportdoc-api \
+            -p 9001:9001 \
+            -e SUPPORTDOC_LOCAL_API_MODE=fixture \
+            -e SUPPORTDOC_LOCAL_API_HOST=0.0.0.0 \
+            -e SUPPORTDOC_LOCAL_API_PORT=9001 \
+            -e SUPPORTDOC_QUERY_GENERATION_MODE=fixture \
+            supportdoc-rag-chatbot-api:ci
+
+      - name: Wait for /healthz
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:9001/healthz; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Container did not become healthy in time." >&2
+          docker logs supportdoc-api || true
+          exit 1
+
+      - name: Smoke /readyz
+        run: curl --fail --silent --show-error http://127.0.0.1:9001/readyz
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker logs supportdoc-api || true
+
+      - name: Stop backend container
+        if: always()
+        run: docker rm -f supportdoc-api || true
