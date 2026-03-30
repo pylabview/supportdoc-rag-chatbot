@@ -11,6 +11,8 @@ The baseline is intentionally opinionated so later infra work can build against 
 
 Companion cost and operations notes for the same baseline live in `docs/ops/cost_and_ops.md`.
 
+The runtime / trust validation entry point for this same API-first MVP lives in `docs/validation/README.md`.
+
 ## Baseline decision summary
 
 The capstone MVP will use this default AWS path:
@@ -66,6 +68,8 @@ For immediate deployment readiness, the backend can start in **fixture mode** an
 - deterministic `/healthz` and `/readyz` responses
 - a stable `/query` contract
 - log capture and operational visibility
+
+Those proofs are exercised locally with `./scripts/smoke-container-runtime.sh` and the reviewed trust artifacts grouped under `docs/validation/`.
 
 This is the shortest path from the current repo to an AWS-hosted backend shell.
 

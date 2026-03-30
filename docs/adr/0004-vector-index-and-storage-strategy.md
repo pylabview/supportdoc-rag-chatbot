@@ -94,5 +94,5 @@ FAISS already provides a practical, well-understood baseline.
 ## Links
 
 - **Proposal:** `Capstone_Project_Proposal_SupportDoc_RAG_Chatbot_with_Citations_V13.md` §5.1, §6.2, §6.6, §9.2.1, §10.1
-- **Code:** `<replace-with-repo-path-to-vector-index-code>`
-- **Issue:** `<replace-with-sub-issue-number>`
+- **Code:** `src/supportdoc_rag_chatbot/retrieval/indexes/faiss_backend.py`, `src/supportdoc_rag_chatbot/retrieval/indexes/base.py`, `src/supportdoc_rag_chatbot/cli.py`, `src/supportdoc_rag_chatbot/evaluation/dense_baseline.py`
+- **Scope:** `EPIC 3 — Embeddings + vector index (local MVP first)`

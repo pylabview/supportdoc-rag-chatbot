@@ -13,29 +13,29 @@ The initial corpus is a pinned snapshot of Kubernetes documentation so the proje
 This README is maintained as a live project document and evolves with each completed task issue.
 
 ### Current Phase
-Trust-layer response contract scaffolded with a canonical schema, checked-in fixtures, and local smoke validation.
+API-first MVP validation with reviewed evidence, documented smoke paths, and source-of-truth cleanup.
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
 - Corpus governance documentation in `docs/data/corpus.md`.
 - Ingestion pipeline artifacts for manifest generation, parsing, section extraction, chunking, and validation.
-- Stable `chunks.jsonl` artifact with chunk-level provenance metadata.
 - Local embedding job that converts `data/processed/chunks.jsonl` into deterministic dense-vector artifacts for downstream index construction.
 - Local FAISS backend that builds, persists, reloads, and searches a dense index over saved embedding artifacts.
 - Developer-facing retrieval smoke CLI for local dense search over a saved FAISS index.
 - Shared retrieval evaluation harness plus dense, BM25, and hybrid baseline runners that execute the committed Dev QA set and write deterministic result artifacts.
-- Retrieval comparison note documenting baseline configs, reference fixture metrics, trade-offs, and the provisional default retrieval mode for later epics.
+- Retrieval comparison note documenting baseline configs, reference fixture metrics, trade-offs, and the provisional hybrid recommendation for later retrieval integration work.
 - Canonical trust-layer `QueryResponse` schema with Pydantic validation, checked-in JSON Schema, example answer/refusal fixtures, and a local trust smoke command.
+- Fixture-mode local API smoke path via `./scripts/run-api-local.sh`.
+- Artifact-mode API smoke suite via `./scripts/smoke-artifact-api.sh`.
+- Container runtime smoke validation via `./scripts/smoke-container-runtime.sh`.
+- Final evidence review package under `docs/validation/` with a committed review set, rubric, results template, raw reviewed outputs, and reviewed summary.
+- AWS baseline deployment notes plus companion cost / ops guidance under `docs/architecture/` and `docs/ops/`.
 
 ### In Progress
-- Prompt rules for citation-backed generation.
-- Citation validation against retrieved evidence spans.
-- Retrieval sufficiency gating before final answer emission.
+- Final MVP readiness closeout / summary documentation.
 
 ### Next Up
-- Wire prompt-generation outputs onto the canonical trust response contract.
-- Connect citation validation and refusal gating to the provisional hybrid retrieval default.
-- Expand deployment and observability documentation as the backend/API layer matures.
+- Publish the final readiness report and closure checklist for Epic 10.
 
 ---
 
@@ -58,7 +58,7 @@ This is the main orchestration layer implemented in this repository. It is respo
 - refusal enforcement.
 
 ### Infrastructure Layer
-The intended deployment target is an AWS-backed web application with a frontend, backend API, vector search layer, and model-serving component. The proposal currently targets a React-based UI, a FastAPI backend, object storage for artifacts, and a vector store such as FAISS, pgvector, or OpenSearch depending on the stage of the project.
+The deploy-now MVP is **API-first**. The repository currently proves the backend shell, trust contract, local artifact-backed retrieval path, and container/runtime smoke workflows. A future React frontend remains explicitly deferred and is documented only as a later deployment option in `docs/architecture/aws_deployment.md`.
 
 ### High-Level System Flow
 
@@ -395,6 +395,8 @@ Prerequisite:
 uv sync --locked --extra dev-tools --extra faiss
 ```
 
+For one place to find the fixture smoke path, artifact smoke path, container runtime smoke, and reviewed evidence artifacts, start at `docs/validation/README.md`.
+
 ### Optional local configuration
 
 Set shell-wrapper options with flags or exported environment variables:
@@ -544,6 +546,8 @@ Evaluation work is planned in two stages:
 
 Retrieval-only artifacts live under `data/evaluation/`. The current artifact-backed MVP trust pass now lives under `docs/validation/final_evidence_review.md`, with the versioned review set in `data/evaluation/final_evidence_review.k8s-9e1e32b.v1.jsonl`.
 
+The canonical validation index for Epic 10 now lives at `docs/validation/README.md`.
+
 ## 9A. Development Retrieval QA Set
 
 A small versioned development QA set now lives under `data/evaluation/` for retrieval-only baseline work. The current committed dataset targets snapshot `k8s-9e1e32b` from `data/manifests/source_manifest.jsonl` and includes answerable plus intentionally unanswerable questions, along with expected section/chunk evidence IDs for retrieval checks.
@@ -575,23 +579,35 @@ See `docs/process/hybrid_retrieval_baseline.md` for the default fusion strategy,
 
 A retrieval-only comparison note now lives at `docs/process/retrieval_comparison_notes.md`. It records the current Epic 4 baseline configs, reference fixture metrics from the shared evaluation harness, qualitative trade-offs, and a **provisional default recommendation of `hybrid-rrf`** for follow-on work.
 
-Because the repository does not commit local processed chunk / embedding / FAISS artifacts, the comparison note distinguishes between reproducible fixture metrics and future corpus-level runs that can be regenerated locally when those artifacts exist.
+Because the repository does not commit local processed chunk / embedding / FAISS artifacts, the comparison note distinguishes between reproducible fixture metrics and future corpus-level runs that can be regenerated locally when those artifacts exist. That recommendation is still an evaluation artifact, not a claim that the current checked-in API path already runs hybrid retrieval end to end.
+
+## 9D. Validation index and reviewed trust artifacts
+
+The final MVP validation materials are grouped under `docs/validation/`:
+
+- `docs/validation/README.md` — entry point for smoke commands and reviewed trust artifacts
+- `docs/validation/final_evidence_review.md` — reviewed evidence correctness summary
+- `docs/validation/final_evidence_review_rubric.md` — reviewer rubric
+- `docs/validation/final_evidence_review_results.template.md` — blank results template
+- `docs/validation/final_evidence_review.first_pass.raw.json` — first reviewed pass raw outputs
+- `docs/validation/final_evidence_review.final_pass.raw.json` — final reviewed pass raw outputs
 
 ---
 
 ## 10. Deployment Overview
 
-The intended deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The local MVP keeps artifacts simple so the deployment architecture can evolve without rewriting the ingestion or embedding steps.
+The intended long-term deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The **current validated MVP scope in this repo is API-first**: backend runtime proof, local smoke workflows, reviewed trust artifacts, and an AWS baseline that labels the frontend as deferred.
 
 The canonical AWS deployment baseline for that path now lives in `docs/architecture/aws_deployment.md`, with the rendered diagram in `docs/diagrams/aws_deployment.md` and the versioned Mermaid source in `docs/diagrams/aws_deployment.mmd`.
 
 ---
 
-## 11. Documentation Map / Roadmap
+## 11. Documentation Map / Source of Truth
 
 - `docs/process/git_workflow.md` — branch / PR / lockfile workflow
 - `docs/data/corpus.md` — corpus scope and licensing notes
 - `docs/diagrams/ingestion_pipeline.md` — ingestion pipeline overview
+- `docs/validation/README.md` — validation entry point for fixture smoke, artifact smoke, container runtime smoke, and reviewed trust artifacts
 - `docs/architecture/aws_deployment.md` — canonical AWS deployment baseline, deploy-now scope, and deferred options
 - `docs/diagrams/aws_deployment.md` — AWS deployment diagram
 - `docs/adr/` — architecture decisions and project rationale
@@ -599,4 +615,5 @@ The canonical AWS deployment baseline for that path now lives in `docs/architect
 - `docs/process/retrieval_comparison_notes.md` — Epic 4 baseline comparison and provisional default selection
 - `docs/process/trust_response_contract.md` — canonical response contract, schema artifact, and smoke command
 - `docs/process/refusal_response_builder.md` — canonical refusal messages and builder entry points
-- `PROPOSAL.md` — project proposal and delivery framing
+- `docs/validation/final_evidence_review.md` — reviewed evidence correctness summary for the current MVP trust pass
+- `PROPOSAL.md` — historical proposal / delivery framing only; do not treat it as the operational source of truth
