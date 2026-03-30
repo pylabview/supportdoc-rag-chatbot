@@ -32,13 +32,14 @@ The corpus is built from a **pinned snapshot** of the Kubernetes documentation r
 
 ### Snapshot Metadata
 
-> Replace the placeholder values below before the first production ingestion run.
+The committed repo artifacts are currently tied to one pinned snapshot label:
 
 - **Source repository:** https://github.com/kubernetes/website
-- **Snapshot ID:** `<snapshot_commit_hash>`
-- **Snapshot date:** `<YYYY-MM-DD>`
-- **Suggested snapshot label:** `k8s-<short_commit_hash>`
+- **Snapshot ID / label:** `k8s-9e1e32b`
+- **Snapshot date:** not persisted in the committed repo artifacts; for the current MVP, `k8s-9e1e32b` is the reproducibility handle used by the manifest and evaluation datasets
 - **Source base URL:** https://kubernetes.io
+
+If a broader corpus refresh is generated later, keep recording the human-readable snapshot date in the ingest report or release notes, but do not replace the snapshot label as the primary operational identifier.
 
 ### Reproducibility Rule
 
@@ -169,14 +170,18 @@ After ingestion, the project should be able to generate or update the following 
 
 ---
 
-## Corpus Size (Filled After Ingestion)
+## Corpus Size and committed repo signals
 
-These values should be updated after the corpus is ingested from the pinned snapshot.
+The Git-tracked repo intentionally commits the snapshot manifest and evaluation artifacts, but it does **not** commit a full `data/parsed/sections.jsonl` or `data/processed/chunks.jsonl` corpus build. That keeps developer-local processed state out of version control while preserving one stable snapshot label.
 
-- **Documents:** TBD
-- **Sections:** TBD
-- **Chunks:** TBD
-- **Estimated tokens:** TBD
+Current committed signals:
+
+- **Documents in `data/manifests/source_manifest.jsonl`:** `2`
+- **Sections:** not committed in Git; generated locally at `data/parsed/sections.jsonl` during ingestion runs
+- **Chunks:** not committed in Git; generated locally at `data/processed/chunks.jsonl` during ingestion runs
+- **Estimated tokens:** not committed in Git; record this in `data/processed/ingest_report.json` for any full local corpus rebuild
+
+Smoke fixtures and reviewed evidence artifacts intentionally use small deterministic subsets derived from the same snapshot label rather than claiming corpus-wide section/chunk statistics in the repo root docs.
 
 ---
 
@@ -185,11 +190,11 @@ These values should be updated after the corpus is ingested from the pinned snap
 A typical rebuild flow should look like this:
 
 ```bash
-python -m supportdoc_rag_chatbot.ingestion.fetch_snapshot
-python -m supportdoc_rag_chatbot.ingestion.build_manifest
-python -m supportdoc_rag_chatbot.ingestion.parse_docs
-python -m supportdoc_rag_chatbot.ingestion.chunk_docs
-python -m supportdoc_rag_chatbot.ingestion.validate_corpus
+uv run python -m supportdoc_rag_chatbot.ingestion.fetch_snapshot
+uv run python -m supportdoc_rag_chatbot.ingestion.build_manifest
+uv run python -m supportdoc_rag_chatbot.ingestion.parse_docs
+uv run python -m supportdoc_rag_chatbot.ingestion.chunk_docs
+uv run python -m supportdoc_rag_chatbot.ingestion.validate_corpus
 ```
 
 If some commands do not exist yet, this section should still be kept as the target ingestion contract.

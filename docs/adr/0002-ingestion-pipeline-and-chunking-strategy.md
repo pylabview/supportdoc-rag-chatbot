@@ -115,5 +115,5 @@ The baseline should preserve enough standalone meaning for retrieval and generat
 ## Links
 
 - **Proposal:** `Capstone_Project_Proposal_SupportDoc_RAG_Chatbot_with_Citations_V13.md` §4.4, §5.2, §6.3, §10.1, §11.1
-- **Code:** `<replace-with-repo-path-to-ingestion-code>`
-- **Issue:** `<replace-with-sub-issue-number>`
+- **Code:** `src/supportdoc_rag_chatbot/ingestion/build_manifest.py`, `src/supportdoc_rag_chatbot/ingestion/parse_docs.py`, `src/supportdoc_rag_chatbot/ingestion/chunk_docs.py`, `src/supportdoc_rag_chatbot/ingestion/chunker.py`, `src/supportdoc_rag_chatbot/ingestion/validator.py`
+- **Scope:** `EPIC 2 — Ingestion pipeline (parse → chunk → metadata)`
