@@ -592,6 +592,10 @@ The final MVP validation materials are grouped under `docs/validation/`:
 - `docs/validation/final_evidence_review.first_pass.raw.json` — first reviewed pass raw outputs
 - `docs/validation/final_evidence_review.final_pass.raw.json` — final reviewed pass raw outputs
 
+## 9D. Final MVP readiness report
+
+The single closeout status page for Epic 10 now lives at `docs/validation/mvp_readiness.md`. Start there when you need the current final-readiness decision, the pass/fail matrix for remaining MVP validation items, and the closure checklist that maps directly to the Epic 10 tasks.
+
 ---
 
 ## 10. Deployment Overview
