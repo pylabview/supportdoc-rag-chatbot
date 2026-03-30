@@ -577,6 +577,10 @@ A retrieval-only comparison note now lives at `docs/process/retrieval_comparison
 
 Because the repository does not commit local processed chunk / embedding / FAISS artifacts, the comparison note distinguishes between reproducible fixture metrics and future corpus-level runs that can be regenerated locally when those artifacts exist.
 
+## 9D. Final MVP readiness report
+
+The single closeout status page for Epic 10 now lives at `docs/validation/mvp_readiness.md`. Start there when you need the current final-readiness decision, the pass/fail matrix for remaining MVP validation items, and the closure checklist that maps directly to the Epic 10 tasks.
+
 ---
 
 ## 10. Deployment Overview
