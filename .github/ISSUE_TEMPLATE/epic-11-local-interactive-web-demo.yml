@@ -1,0 +1,116 @@
+name: "EPIC 11 — Local interactive web demo + cross-platform readiness"
+description: "Thin local browser UI on top of the existing FastAPI backend, with citations/refusals and macOS + Pop!_OS readiness."
+title: "[EPIC 11] Local interactive web demo + cross-platform readiness"
+labels: ['epic', 'frontend', 'docs', 'mvp']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Outcome
+        Add a thin local browser UI on top of the existing FastAPI backend so the project can be demonstrated locally on macOS and Pop!_OS without changing the core RAG, citation-validation, and refusal architecture.
+
+        ## In scope
+        - one-page local browser UI
+        - integration with the existing backend endpoints
+        - answer, refusal, and citation rendering
+        - default local demo path in fixture mode
+        - optional local validation path in artifact mode
+        - cross-platform runbook notes for macOS + Pop!_OS
+        - report-ready wording for UI implementation and training-process-if-applicable
+
+        ## Out of scope
+        - backend rewrite
+        - fine-tuning / LoRA
+        - AWS deployment implementation
+        - auth / user accounts
+        - persistent multi-turn history
+        - non-essential streaming work
+        - production observability expansion beyond what already exists
+
+        ## Acceptance criteria
+        - A local browser UI can submit a question to the current backend and render a valid response.
+        - Supported answers display `final_answer` and visible citation markers.
+        - Refusals render clearly using the existing refusal contract.
+        - The first-run demo path works from a clean checkout in fixture mode.
+        - The repo documents the optional artifact mode path for more realistic local testing.
+        - The local workflow is verified on macOS arm64 and Pop!_OS x86_64.
+        - The documentation explains that baseline delivery does not require model fine-tuning and instead uses the ingestion / indexing pipeline.
+        - The repo is ready for a later AWS deployment epic without frontend rework.
+
+  - type: checkboxes
+    id: tasks
+    attributes:
+      label: Tasks (create separate Task issues for each)
+      description: Tick these as you complete each Task issue.
+      options:
+        - label: Freeze frontend contract against current API
+          required: false
+        - label: Scaffold thin local browser UI
+          required: false
+        - label: Wire question flow to `/query`
+          required: false
+        - label: Handle citations, refusals, and evidence display
+          required: false
+        - label: Publish canonical local run workflow
+          required: false
+        - label: Verify macOS + Pop!_OS paths
+          required: false
+        - label: Add browser smoke checklist and demo script
+          required: false
+        - label: Prepare report + AWS handoff notes
+          required: false
+
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      description: GitHub handle(s) responsible for this epic (e.g., @rodrigo)
+      placeholder: "@your-handle"
+    validations:
+      required: false
+
+  - type: input
+    id: target_date
+    attributes:
+      label: Target date
+      description: Optional target completion date (YYYY-MM-DD)
+      placeholder: "2026-04-30"
+    validations:
+      required: false
+
+  - type: textarea
+    id: task_links
+    attributes:
+      label: Linked Task issues
+      description: Paste links to Task issues here as you create them.
+      placeholder: |
+        - https://github.com/<OWNER>/<REPO>/issues/123
+        - https://github.com/<OWNER>/<REPO>/issues/124
+    validations:
+      required: false
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies / blockers
+      description: Anything that must happen first (other epics, external decisions, tooling, etc.).
+      placeholder: |
+        - Existing backend routes stay stable: `GET /healthz`, `GET /readyz`, `POST /query`
+        - Existing trust contract remains the default UI contract: `docs/contracts/query_response.schema.json`
+        - Python remains pinned to 3.13
+        - One small decision is needed on evidence text / source metadata for clickable citations
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Extra context, decisions, or links.
+      placeholder: |
+        - Default first-run path: fixture mode
+        - Optional second path: artifact mode
+        - Verify local workflow on macOS arm64 and Pop!_OS x86_64
+        - Baseline delivery does not require fine-tuning; use snapshot -> parse -> chunk -> embed -> index
+    validations:
+      required: false
