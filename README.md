@@ -602,6 +602,8 @@ The single closeout status page for Epic 10 now lives at `docs/validation/mvp_re
 
 The intended long-term deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The **current validated MVP scope in this repo is API-first**: backend runtime proof, local smoke workflows, reviewed trust artifacts, and an AWS baseline that labels the frontend as deferred.
 
+The first browser-demo integration contract for that API-first backend now lives in `docs/process/browser_demo_contract.md`. It freezes the UI against the current `/query` and `/readyz` surface and explicitly defers rich evidence cards until the backend exposes a request-scoped evidence payload.
+
 The canonical AWS deployment baseline for that path now lives in `docs/architecture/aws_deployment.md`, with the rendered diagram in `docs/diagrams/aws_deployment.md` and the versioned Mermaid source in `docs/diagrams/aws_deployment.mmd`.
 
 ---
@@ -618,6 +620,7 @@ The canonical AWS deployment baseline for that path now lives in `docs/architect
 - `docs/process/hybrid_retrieval_baseline.md` — default hybrid baseline config and run command
 - `docs/process/retrieval_comparison_notes.md` — Epic 4 baseline comparison and provisional default selection
 - `docs/process/trust_response_contract.md` — canonical response contract, schema artifact, and smoke command
+- `docs/process/browser_demo_contract.md` — frozen browser-demo state model and current API/UI contract
 - `docs/process/refusal_response_builder.md` — canonical refusal messages and builder entry points
 - `docs/validation/final_evidence_review.md` — reviewed evidence correctness summary for the current MVP trust pass
 - `PROPOSAL.md` — historical proposal / delivery framing only; do not treat it as the operational source of truth
