@@ -39,12 +39,12 @@ What already exists in the ZIP:
 - local retrieval artifacts built around `chunks.jsonl` plus FAISS index files
 - canonical trust-layer response schema and smoke validation
 - structured backend orchestration for retrieval, refusal gating, generation, and citation validation
+- a checked-in React SPA scaffold under `frontend/` for the local browser demo
 
 What does **not** exist yet in the ZIP:
 
 - a production AWS deployment definition
-- a checked-in frontend application
-- container packaging for deployment
+- frontend deployment packaging or hosting configuration
 - a cloud retrieval adapter for `pgvector`
 - a dedicated AWS inference deployment
 
@@ -60,7 +60,7 @@ It is a subset of the baseline path:
 - keep the public entry point at an ALB
 - wire CloudWatch logging and basic ECS / ALB health monitoring
 - store deployment-time artifacts and future ingestion outputs in S3
-- keep the frontend out of scope for now
+- keep frontend hosting out of scope for now
 
 For immediate deployment readiness, the backend can start in **fixture mode** and prove:
 
@@ -190,6 +190,7 @@ Optional OpenTelemetry tracing is deferred. CloudWatch-first logging is the defa
 - API-first backend exists
 - local fixture and artifact retrieval flows exist
 - local FAISS artifacts are the current retrieval baseline
+- a thin local frontend scaffold exists under `frontend/`
 - no frontend deployment work is committed yet
 - no AWS deployment packaging is committed yet
 
@@ -219,7 +220,7 @@ The following points still need explicit implementation decisions in later infra
 1. **Inference server choice:** vLLM vs TGI for the first EC2 GPU deployment
 2. **Retrieval promotion job:** whether `pgvector` loading happens from a one-off script, ECS task, or CI/CD step
 3. **Artifact promotion path:** which exact S3 prefixes become the stable handoff points for deployment-ready data
-4. **Frontend cutover timing:** whether the capstone demo initially ships API-only or with the React frontend enabled
+4. **Frontend cutover timing:** whether the capstone demo initially ships API-only or with the React frontend query flow enabled
 5. **Dependency-aware readiness:** whether `/readyz` should grow deep checks for RDS and inference before final deployment
 
 ## Diagram source

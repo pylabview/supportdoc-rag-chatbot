@@ -17,6 +17,7 @@ API-first MVP validation with reviewed evidence, documented smoke paths, and sou
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
+- Thin React + Vite local browser demo scaffold under `frontend/`.
 - Corpus governance documentation in `docs/data/corpus.md`.
 - Ingestion pipeline artifacts for manifest generation, parsing, section extraction, chunking, and validation.
 - Local embedding job that converts `data/processed/chunks.jsonl` into deterministic dense-vector artifacts for downstream index construction.
@@ -58,7 +59,7 @@ This is the main orchestration layer implemented in this repository. It is respo
 - refusal enforcement.
 
 ### Infrastructure Layer
-The deploy-now MVP is **API-first**. The repository currently proves the backend shell, trust contract, local artifact-backed retrieval path, and container/runtime smoke workflows. A future React frontend remains explicitly deferred and is documented only as a later deployment option in `docs/architecture/aws_deployment.md`.
+The deploy-now MVP remains **API-first** for backend validation. The repository now also includes a thin React browser-demo scaffold under `frontend/`, while frontend hosting, live `/query` wiring, and richer evidence UI remain deferred to later Epic 11 tasks and the deployment baseline in `docs/architecture/aws_deployment.md`.
 
 ### High-Level System Flow
 
@@ -162,6 +163,8 @@ docs/
   data/                   # Corpus and licensing docs
   diagrams/               # Architecture / ingestion diagrams
   process/                # Repo workflow and governance docs
+
+frontend/                 # Thin React + Vite local browser demo shell
 ```
 
 ---
@@ -527,6 +530,43 @@ If artifact-mode container support is needed later, it should be added as an exp
 
 ---
 
+## 7C. Local browser demo scaffold
+
+Epic 11 now includes a thin local React SPA scaffold under `frontend/`. This task intentionally keeps the browser shell small: one page, one question box, one submit button, one result panel, and one status area aligned to `docs/process/browser_demo_contract.md`.
+
+### Start the frontend locally
+
+```bash
+cd frontend
+node -v
+npm install
+npm run dev
+```
+
+Use Node `^20.19.0 || >=22.12.0` for the Vite-based scaffold. The committed `frontend/.npmrc` also keeps the lockfile registry-neutral for local installs on macOS and Linux.
+
+The Vite dev server binds to `http://127.0.0.1:5173` by default.
+
+### API base URL override
+
+The frontend reads `VITE_SUPPORTDOC_API_BASE_URL` and falls back to `http://127.0.0.1:9001`. To point the shell at a different local backend, copy `frontend/.env.example` to `frontend/.env.local` and edit the value.
+
+```bash
+cd frontend
+cp .env.example .env.local
+```
+
+### Current scope of the scaffold
+
+- one-page React SPA
+- placeholder layouts for supported answer, refusal, loading, and backend-unavailable states
+- no auth, persistence, or client-side routing
+- no live `/query` request in this task yet
+
+See `frontend/README.md` for the focused frontend startup note.
+
+---
+
 ## 8. Citations and Refusal Behavior
 
 The repository now includes a canonical trust-layer response contract under `src/supportdoc_rag_chatbot/app/schemas/trust.py`. That contract defines structured supported answers, structured refusals, restricted refusal reason codes, and deterministic JSON Schema export under `docs/contracts/`.
@@ -600,7 +640,7 @@ The single closeout status page for Epic 10 now lives at `docs/validation/mvp_re
 
 ## 10. Deployment Overview
 
-The intended long-term deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The **current validated MVP scope in this repo is API-first**: backend runtime proof, local smoke workflows, reviewed trust artifacts, and an AWS baseline that labels the frontend as deferred.
+The intended long-term deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The **current validated MVP scope in this repo remains API-first** for backend proof and reviewed trust artifacts, while the repo now also includes a thin local browser scaffold under `frontend/` for Epic 11 demo work. Frontend hosting and richer browser behavior are still deferred in the AWS baseline.
 
 The first browser-demo integration contract for that API-first backend now lives in `docs/process/browser_demo_contract.md`. It freezes the UI against the current `/query` and `/readyz` surface and explicitly defers rich evidence cards until the backend exposes a request-scoped evidence payload.
 
@@ -621,6 +661,7 @@ The canonical AWS deployment baseline for that path now lives in `docs/architect
 - `docs/process/retrieval_comparison_notes.md` — Epic 4 baseline comparison and provisional default selection
 - `docs/process/trust_response_contract.md` — canonical response contract, schema artifact, and smoke command
 - `docs/process/browser_demo_contract.md` — frozen browser-demo state model and current API/UI contract
+- `frontend/README.md` — local startup and API base URL override for the browser demo shell
 - `docs/process/refusal_response_builder.md` — canonical refusal messages and builder entry points
 - `docs/validation/final_evidence_review.md` — reviewed evidence correctness summary for the current MVP trust pass
 - `PROPOSAL.md` — historical proposal / delivery framing only; do not treat it as the operational source of truth
