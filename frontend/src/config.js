@@ -13,3 +13,8 @@ export function readApiBaseUrl() {
 
   return normalized.replace(/\/+$/, "");
 }
+
+export function buildApiUrl(apiBaseUrl, path) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${apiBaseUrl}${normalizedPath}`;
+}

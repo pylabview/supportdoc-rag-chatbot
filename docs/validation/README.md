@@ -15,7 +15,7 @@ The current validated scope is intentionally **backend / API first**:
 - artifact-mode local API smoke is supported,
 - backend container runtime smoke is supported in fixture mode,
 - reviewed evidence correctness artifacts are committed,
-- a thin local browser scaffold now exists under `frontend/`, but frontend query wiring and browser smoke remain outside this validation index,
+- a thin local browser demo now exists under `frontend/` and can call the live local API, but browser smoke remains outside this validation index,
 - artifact-mode inside the container image remains deferred.
 
 ## Canonical commands

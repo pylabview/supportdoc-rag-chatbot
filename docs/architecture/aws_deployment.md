@@ -39,7 +39,7 @@ What already exists in the ZIP:
 - local retrieval artifacts built around `chunks.jsonl` plus FAISS index files
 - canonical trust-layer response schema and smoke validation
 - structured backend orchestration for retrieval, refusal gating, generation, and citation validation
-- a checked-in React SPA scaffold under `frontend/` for the local browser demo
+- a checked-in React SPA browser demo under `frontend/` that can call the local API in development
 
 What does **not** exist yet in the ZIP:
 
@@ -190,7 +190,7 @@ Optional OpenTelemetry tracing is deferred. CloudWatch-first logging is the defa
 - API-first backend exists
 - local fixture and artifact retrieval flows exist
 - local FAISS artifacts are the current retrieval baseline
-- a thin local frontend scaffold exists under `frontend/`
+- a thin local frontend browser demo exists under `frontend/` and can submit live local `/query` requests
 - no frontend deployment work is committed yet
 - no AWS deployment packaging is committed yet
 
