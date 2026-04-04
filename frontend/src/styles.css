@@ -93,6 +93,15 @@ textarea {
 .helper-text {
   margin: 0;
   font-size: 0.95rem;
+  color: #4b5563;
+}
+
+.privacy-warning {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid #fdba74;
+  border-radius: 12px;
+  background: #fff7ed;
 }
 
 .form-actions {
@@ -134,16 +143,48 @@ button:disabled {
   background: #f9fafb;
 }
 
-.result-state--loading,
-.result-state--error,
-.result-state--refusal,
-.result-state--answer {
+.result-state--loading {
   background: #f9fafb;
 }
 
+.result-state--error {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.result-state--refusal {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.result-state--answer {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
 .result-detail,
-.result-diagnostic {
+.result-diagnostic,
+.result-metadata,
+.result-subsection {
   margin-top: 1rem;
+}
+
+.result-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.answer-text {
+  margin-bottom: 0;
+}
+
+.citation-marker-inline {
+  margin-left: 0.1rem;
+  font-size: 0.82em;
+  font-weight: 700;
 }
 
 .loading-bar {
@@ -153,16 +194,51 @@ button:disabled {
   background: linear-gradient(90deg, #d7dce5 0%, #e8ecf3 50%, #d7dce5 100%);
 }
 
-.result-subsection {
-  margin-top: 1rem;
+.result-note {
+  margin-bottom: 0.75rem;
 }
 
 .marker-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  gap: 0.75rem;
   margin: 0;
   padding-left: 1.25rem;
+}
+
+.marker-list-item {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.citation-source-meta {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.citation-source-meta a {
+  color: inherit;
+}
+
+.result-metadata {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.result-metadata div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.result-metadata dt,
+.status-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.result-metadata dd {
+  margin: 0;
 }
 
 .status-panel {
@@ -181,9 +257,10 @@ button:disabled {
   gap: 0.25rem;
 }
 
-.status-label {
-  font-size: 0.9rem;
-  font-weight: 700;
+.status-grid code,
+.status-grid span,
+.status-grid strong {
+  overflow-wrap: anywhere;
 }
 
 .status-pill {

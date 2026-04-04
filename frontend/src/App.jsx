@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 import { buildApiUrl, readApiBaseUrl } from "./config";
 
@@ -18,6 +18,7 @@ const BACKEND_STATUS_LABELS = {
 };
 
 const REQUEST_TIMEOUT_MS = 10000;
+const CITATION_MARKER_PATTERN = /(\[\d+\])/g;
 
 const INITIAL_BACKEND_STATUS = {
   state: "checking",
@@ -27,6 +28,47 @@ const INITIAL_BACKEND_STATUS = {
   queryContract: null,
   message: "Checking backend readiness via /readyz.",
 };
+
+function isCitationMarkerSegment(segment) {
+  return /^\[\d+\]$/.test(segment);
+}
+
+function renderAnswerWithMarkers(finalAnswer) {
+  return finalAnswer.split(CITATION_MARKER_PATTERN).map((segment, index) => {
+    if (!segment) {
+      return null;
+    }
+
+    if (isCitationMarkerSegment(segment)) {
+      return (
+        <sup
+          key={`${segment}-${index}`}
+          className="citation-marker-inline"
+          aria-label={`Citation marker ${segment}`}
+        >
+          {segment}
+        </sup>
+      );
+    }
+
+    return <Fragment key={`${segment}-${index}`}>{segment}</Fragment>;
+  });
+}
+
+function normalizeOptionalText(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized || null;
+}
+
+function citationHasSourceMetadata(citation) {
+  return Boolean(
+    normalizeOptionalText(citation.source_url) || normalizeOptionalText(citation.attribution)
+  );
+}
 
 function normalizeErrorMessage(error) {
   if (error instanceof Error) {
@@ -118,6 +160,46 @@ function buildBackendStatus(nextStatus) {
   };
 }
 
+function CitationMarkers({ citations }) {
+  const hasSourceMetadata = citations.some(citationHasSourceMetadata);
+
+  return (
+    <div className="result-subsection">
+      <h4>Citation markers</h4>
+      <p className="helper-text result-note">
+        This local demo follows the frozen browser contract: citation markers only.
+        Rich evidence cards are deferred because the current <code>/query</code>
+        response does not include request-scoped evidence text.
+        {hasSourceMetadata
+          ? " Any source URL or attribution already exposed to the UI is shown directly under the matching marker."
+          : " Source URL and attribution are not exposed to the browser in the current response shape."}
+      </p>
+      <ul className="marker-list">
+        {citations.map((citation) => {
+          const sourceUrl = normalizeOptionalText(citation.source_url);
+          const attribution = normalizeOptionalText(citation.attribution);
+
+          return (
+            <li key={`${citation.marker}-${citation.chunk_id}`} className="marker-list-item">
+              <code>{citation.marker}</code>
+              {sourceUrl || attribution ? (
+                <div className="citation-source-meta">
+                  {sourceUrl ? (
+                    <a href={sourceUrl} target="_blank" rel="noreferrer">
+                      {sourceUrl}
+                    </a>
+                  ) : null}
+                  {attribution ? <span>{attribution}</span> : null}
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function ResultPanel({ uiState, result, backendErrorMessage }) {
   if (uiState === "loading") {
     return (
@@ -155,32 +237,31 @@ function ResultPanel({ uiState, result, backendErrorMessage }) {
   if (result.refusal.is_refusal) {
     return (
       <div className="result-state result-state--refusal" aria-live="polite">
+        <p className="result-kicker">Trust outcome</p>
         <h3>Refusal</h3>
         <p>{result.final_answer}</p>
-        <div className="result-diagnostic">
-          <span className="status-label">reason_code</span>
-          <code>{result.refusal.reason_code}</code>
-        </div>
+        <dl className="result-metadata">
+          <div>
+            <dt>Reason code</dt>
+            <dd>
+              <code>{result.refusal.reason_code}</code>
+            </dd>
+          </div>
+          <div>
+            <dt>Evidence behavior</dt>
+            <dd>Refusals do not carry citations in the current QueryResponse contract.</dd>
+          </div>
+        </dl>
       </div>
     );
   }
 
   return (
     <div className="result-state result-state--answer" aria-live="polite">
+      <p className="result-kicker">Trust outcome</p>
       <h3>Supported answer</h3>
-      <p>{result.final_answer}</p>
-      {result.citations.length ? (
-        <div className="result-subsection">
-          <h4>Citation markers</h4>
-          <ul className="marker-list">
-            {result.citations.map((citation) => (
-              <li key={`${citation.marker}-${citation.chunk_id}`}>
-                <code>{citation.marker}</code>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <p className="answer-text">{renderAnswerWithMarkers(result.final_answer)}</p>
+      {result.citations.length ? <CitationMarkers citations={result.citations} /> : null}
     </div>
   );
 }
@@ -260,8 +341,8 @@ export default function App() {
       setResult(nextResult);
       setStatusText(
         nextResult.refusal.is_refusal
-          ? "Received a refusal from the live backend."
-          : "Received a supported answer from the live backend."
+          ? "Received an explicit refusal from the live backend."
+          : "Received a supported answer from the live backend with visible citation markers."
       );
       setUiState(nextResult.refusal.is_refusal ? "refusal" : "supported_answer");
       void probeBackendStatus();
@@ -310,6 +391,10 @@ export default function App() {
               The browser trims whitespace before submit, blocks empty input locally,
               and disables submit while a request is in flight.
             </p>
+            <p className="privacy-warning" role="note">
+              Do not paste secrets, credentials, access tokens, or other sensitive data
+              into this local demo.
+            </p>
 
             <div className="form-actions">
               <button type="submit" disabled={isSubmitDisabled}>
@@ -345,6 +430,10 @@ export default function App() {
             <span className={`status-pill status-pill--${backendStatus.state}`}>
               {BACKEND_STATUS_LABELS[backendStatus.state]}
             </span>
+          </div>
+          <div>
+            <span className="status-label">Evidence display</span>
+            <span>Citation markers only</span>
           </div>
           <div>
             <span className="status-label">query_contract</span>

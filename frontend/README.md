@@ -8,6 +8,10 @@ Current scope:
 - one question input and submit button
 - one result panel for supported answers or refusals from the live backend
 - one status area with a tiny `/readyz` indicator for local diagnostics
+- visible citation markers in the supported-answer view
+- explicit refusal rendering from the structured `refusal` contract, not text heuristics
+- marker-only evidence behavior aligned to `docs/process/browser_demo_contract.md`
+- a small warning not to paste secrets or sensitive data into the demo
 - local empty-input validation and submit-disabled loading behavior
 - no auth, persistence, multi-page routing, or rich evidence cards
 
@@ -63,10 +67,26 @@ VITE_SUPPORTDOC_API_BASE_URL=http://127.0.0.1:9001
 
 - sends `POST /query` with `{ "question": "..." }`
 - renders `final_answer` for both supported answers and refusals
-- shows citation markers only for supported answers
+- shows visible citation markers in the answer body and a marker list below it
+- uses `refusal.is_refusal` to distinguish supported answers from refusals
+- shows `reason_code` as a small refusal diagnostic label
+- keeps evidence display to citation markers only
+- does not render rich evidence cards or excerpts because the current `/query` response does not expose request-scoped evidence text
+- source URL and attribution are not currently available to the browser from the canonical `/query` payload
 - disables submit while a request is in flight
 - blocks empty input locally before any network request
+- warns users: Do not paste secrets or sensitive data into the demo
 - probes `GET /readyz` for operator-friendly backend status metadata
+
+## Local browser smoke
+
+From the repo root:
+
+```bash
+bash scripts/smoke-browser-demo.sh
+```
+
+This smoke path installs from the committed lockfile, builds the SPA, and briefly serves `frontend/dist/` so you can confirm the local browser demo boots.
 
 ## Other useful commands
 

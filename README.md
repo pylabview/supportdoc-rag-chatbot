@@ -568,13 +568,25 @@ cp .env.example .env.local
 
 - one-page React SPA
 - live `POST /query` submission with the frozen request shape
-- supported-answer rendering from `final_answer`
-- refusal rendering from `final_answer` plus optional `reason_code`
+- supported-answer rendering from `final_answer` with visible citation markers
+- explicit refusal rendering from `refusal.is_refusal` plus visible `reason_code`
+- marker-only evidence behavior aligned to `docs/process/browser_demo_contract.md`
+- small warning not to paste secrets or sensitive data into the demo
 - local empty-input validation and disabled submit while loading
 - tiny `/readyz` status indicator for local operator diagnostics
 - no auth, persistence, client-side routing, or rich evidence cards yet
 
-The FastAPI backend also accepts browser requests from the local Vite dev origins so the SPA can call the API directly during local development.
+The FastAPI backend also accepts browser requests from the local Vite dev origins so the SPA can call the API directly during local development. The current `/query` contract does not expose evidence text, source URL, or attribution to the browser, so the UI stays on citation markers only for now.
+
+### Browser demo smoke
+
+From the repo root:
+
+```bash
+bash scripts/smoke-browser-demo.sh
+```
+
+This installs the committed frontend dependencies, builds the SPA, and briefly serves the generated `frontend/dist/` output to confirm the local browser demo boots cleanly.
 
 See `frontend/README.md` for the focused frontend startup note.
 
