@@ -15,7 +15,7 @@ The current validated scope is intentionally **backend / API first**:
 - artifact-mode local API smoke is supported,
 - backend container runtime smoke is supported in fixture mode,
 - reviewed evidence correctness artifacts are committed,
-- a thin local browser demo now exists under `frontend/` and can call the live local API, but browser smoke remains outside this validation index,
+- a thin local browser demo now exists under `frontend/` and can call the live local API, with a small local browser smoke path now committed under `scripts/smoke-browser-demo.sh`,
 - artifact-mode inside the container image remains deferred.
 
 ## Canonical commands
@@ -53,6 +53,18 @@ Run the packaged backend runtime smoke path:
 This path builds the checked-in backend image, starts it with `docker run`, waits for health, validates `/healthz`, `/readyz`, and supported + refusal `/query` responses, then cleans up.
 
 Docs: `README.md` section `7B. Containerized Local API Smoke Workflow`
+
+### Browser demo smoke
+
+Build and briefly serve the checked-in browser demo locally:
+
+```bash
+bash scripts/smoke-browser-demo.sh
+```
+
+This path installs the committed frontend dependencies, builds the SPA, and serves `frontend/dist/` long enough to confirm the local UI boots.
+
+Docs: `README.md` section `7C. Local browser demo`
 
 ### Trust-contract schema smoke
 

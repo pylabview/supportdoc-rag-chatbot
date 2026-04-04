@@ -46,6 +46,7 @@ def test_browser_demo_contract_freezes_required_ui_states_and_evidence_decision(
 
     assert "citation markers only" in normalized
     assert "does **not** make the markers clickable" in normalized
+    assert "does **not** expose evidence text, source url, or attribution" in normalized
     assert "query_response.retrieved_context.example.json" in content
     assert "follow-up" in normalized
     assert "request-scoped evidence payload" in normalized
