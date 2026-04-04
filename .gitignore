@@ -214,6 +214,10 @@ __marimo__/
 ._*
 .Spotlight-V100
 .Trashes
+# Frontend local artifacts
+frontend/node_modules/
+frontend/.env.local
+frontend/.env.*.local
 # Generated retrieval artifacts
 data/processed/embeddings/
 

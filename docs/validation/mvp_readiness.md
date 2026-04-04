@@ -95,7 +95,7 @@ The repo already has container packaging documentation and tests that assert the
 These points are still open or explicitly deferred in the current ZIP and should stay visible in readiness review:
 
 - artifact-mode container support is explicitly deferred in `README.md`
-- no frontend application is committed in this ZIP; the repo remains API-first
+- the validated scope remains API-first; the thin local frontend scaffold under `frontend/` is outside the Epic 10 readiness package
 - AWS deployment architecture is documented, but AWS baseline cost/ops notes are not yet committed
 - container packaging exists, but runtime-smoke and build-smoke evidence are not yet committed as final-readiness artifacts
 - end-to-end evidence review materials and reviewed evidence-correctness outputs are not yet committed in this snapshot

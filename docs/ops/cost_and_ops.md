@@ -63,7 +63,7 @@ This posture is useful for short periods, but it should not be the default outsi
 | Artifact storage | S3 | Versioned corpus snapshots, processed artifacts, and evaluation outputs |
 | Observability | CloudWatch Logs / Metrics / Alarms | Small baseline telemetry footprint |
 | Secrets and config | Secrets Manager + SSM Parameter Store | Secrets stay out of the container image |
-| Frontend | Amplify Hosting | Deferred until the frontend exists in the repo |
+| Frontend | Amplify Hosting | Deferred until frontend hosting joins the deployable AWS baseline |
 
 ## Baseline cost table
 
