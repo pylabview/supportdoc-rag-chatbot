@@ -4,6 +4,7 @@ import logging
 from time import perf_counter
 
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from supportdoc_rag_chatbot.logging_conf import (
     REQUEST_ID_HEADER,
@@ -14,9 +15,19 @@ from supportdoc_rag_chatbot.logging_conf import (
 
 logger = logging.getLogger(__name__)
 
+LOCAL_BROWSER_ORIGIN_REGEX = r"https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$"
+
 
 def register_api_middleware(app: FastAPI) -> None:
-    """Register request correlation and lifecycle logging middleware."""
+    """Register API middleware for local browser access and request lifecycle logging."""
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=LOCAL_BROWSER_ORIGIN_REGEX,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["*"],
+    )
 
     @app.middleware("http")
     async def _request_logging_middleware(request: Request, call_next):
@@ -63,4 +74,4 @@ def _resolve_route_path(request: Request) -> str:
     return request.url.path
 
 
-__all__ = ["register_api_middleware"]
+__all__ = ["LOCAL_BROWSER_ORIGIN_REGEX", "register_api_middleware"]

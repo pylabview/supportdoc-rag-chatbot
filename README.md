@@ -17,7 +17,7 @@ API-first MVP validation with reviewed evidence, documented smoke paths, and sou
 
 ### Completed
 - Repository scaffolding for application, ingestion, retrieval, evaluation, and documentation.
-- Thin React + Vite local browser demo scaffold under `frontend/`.
+- Thin React + Vite local browser demo under `frontend/` with live local API wiring.
 - Corpus governance documentation in `docs/data/corpus.md`.
 - Ingestion pipeline artifacts for manifest generation, parsing, section extraction, chunking, and validation.
 - Local embedding job that converts `data/processed/chunks.jsonl` into deterministic dense-vector artifacts for downstream index construction.
@@ -59,7 +59,7 @@ This is the main orchestration layer implemented in this repository. It is respo
 - refusal enforcement.
 
 ### Infrastructure Layer
-The deploy-now MVP remains **API-first** for backend validation. The repository now also includes a thin React browser-demo scaffold under `frontend/`, while frontend hosting, live `/query` wiring, and richer evidence UI remain deferred to later Epic 11 tasks and the deployment baseline in `docs/architecture/aws_deployment.md`.
+The deploy-now MVP remains **API-first** for backend validation. The repository now also includes a thin React browser demo under `frontend/` that can call the local FastAPI `/query` route in development, while frontend hosting and richer evidence UI remain deferred to later Epic 11 tasks and the deployment baseline in `docs/architecture/aws_deployment.md`.
 
 ### High-Level System Flow
 
@@ -530,11 +530,19 @@ If artifact-mode container support is needed later, it should be added as an exp
 
 ---
 
-## 7C. Local browser demo scaffold
+## 7C. Local browser demo
 
-Epic 11 now includes a thin local React SPA scaffold under `frontend/`. This task intentionally keeps the browser shell small: one page, one question box, one submit button, one result panel, and one status area aligned to `docs/process/browser_demo_contract.md`.
+Epic 11 now includes a thin local React SPA under `frontend/`. It stays intentionally small: one page, one question box, one submit button, one result panel, and one status area aligned to `docs/process/browser_demo_contract.md`.
 
 ### Start the frontend locally
+
+Start the local API first:
+
+```bash
+./scripts/run-api-local.sh
+```
+
+Then boot the browser demo:
 
 ```bash
 cd frontend
@@ -543,25 +551,30 @@ npm install
 npm run dev
 ```
 
-Use Node `^20.19.0 || >=22.12.0` for the Vite-based scaffold. The committed `frontend/.npmrc` also keeps the lockfile registry-neutral for local installs on macOS and Linux.
+Use Node `^20.19.0 || >=22.12.0` for the Vite-based app. The committed `frontend/.npmrc` also keeps the lockfile registry-neutral for local installs on macOS and Linux.
 
 The Vite dev server binds to `http://127.0.0.1:5173` by default.
 
 ### API base URL override
 
-The frontend reads `VITE_SUPPORTDOC_API_BASE_URL` and falls back to `http://127.0.0.1:9001`. To point the shell at a different local backend, copy `frontend/.env.example` to `frontend/.env.local` and edit the value.
+The frontend reads `VITE_SUPPORTDOC_API_BASE_URL` and falls back to `http://127.0.0.1:9001`. To point the browser demo at a different local backend, copy `frontend/.env.example` to `frontend/.env.local` and edit the value.
 
 ```bash
 cd frontend
 cp .env.example .env.local
 ```
 
-### Current scope of the scaffold
+### Current scope of the browser demo
 
 - one-page React SPA
-- placeholder layouts for supported answer, refusal, loading, and backend-unavailable states
-- no auth, persistence, or client-side routing
-- no live `/query` request in this task yet
+- live `POST /query` submission with the frozen request shape
+- supported-answer rendering from `final_answer`
+- refusal rendering from `final_answer` plus optional `reason_code`
+- local empty-input validation and disabled submit while loading
+- tiny `/readyz` status indicator for local operator diagnostics
+- no auth, persistence, client-side routing, or rich evidence cards yet
+
+The FastAPI backend also accepts browser requests from the local Vite dev origins so the SPA can call the API directly during local development.
 
 See `frontend/README.md` for the focused frontend startup note.
 
@@ -640,7 +653,7 @@ The single closeout status page for Epic 10 now lives at `docs/validation/mvp_re
 
 ## 10. Deployment Overview
 
-The intended long-term deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The **current validated MVP scope in this repo remains API-first** for backend proof and reviewed trust artifacts, while the repo now also includes a thin local browser scaffold under `frontend/` for Epic 11 demo work. Frontend hosting and richer browser behavior are still deferred in the AWS baseline.
+The intended long-term deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The **current validated MVP scope in this repo remains API-first** for backend proof and reviewed trust artifacts, while the repo now also includes a thin local browser demo under `frontend/` for Epic 11 work, including live local API wiring. Frontend hosting and richer browser behavior are still deferred in the AWS baseline.
 
 The first browser-demo integration contract for that API-first backend now lives in `docs/process/browser_demo_contract.md`. It freezes the UI against the current `/query` and `/readyz` surface and explicitly defers rich evidence cards until the backend exposes a request-scoped evidence payload.
 

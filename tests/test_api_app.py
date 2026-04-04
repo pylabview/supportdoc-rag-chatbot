@@ -88,6 +88,30 @@ def test_readyz_returns_deterministic_json_without_external_dependencies() -> No
     }
 
 
+def test_readyz_allows_local_browser_get_requests_via_cors() -> None:
+    with build_test_client() as client:
+        response = client.get("/readyz", headers={"Origin": "http://localhost:5173"})
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+def test_query_preflight_allows_local_browser_post_requests_via_cors() -> None:
+    with build_test_client() as client:
+        response = client.options(
+            "/query",
+            headers={
+                "Origin": "http://127.0.0.1:5173",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5173"
+    assert "POST" in response.headers["access-control-allow-methods"]
+
+
 def test_query_returns_supported_answer_from_backend_orchestration() -> None:
     with build_test_client() as client:
         response = client.post("/query", json={"question": "What is a Pod?"})

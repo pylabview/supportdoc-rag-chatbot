@@ -49,6 +49,8 @@ def test_frontend_shell_contains_required_browser_demo_regions() -> None:
         "Refusal",
         "Backend unavailable",
         "loading",
+        "Refresh backend status",
+        "Citation markers",
     ):
         assert required_text in content
 
@@ -57,11 +59,14 @@ def test_frontend_readme_and_env_example_document_local_startup_and_api_base_url
     readme = (FRONTEND_DIR / "README.md").read_text(encoding="utf-8")
     env_example = (FRONTEND_DIR / ".env.example").read_text(encoding="utf-8")
 
+    assert "./scripts/run-api-local.sh" in readme
     assert "npm install" in readme
     assert "npm run dev" in readme
     assert "^20.19.0 || >=22.12.0" in readme
     assert "VITE_SUPPORTDOC_API_BASE_URL" in readme
     assert "http://127.0.0.1:9001" in readme
+    assert "POST /query" in readme
+    assert "GET /readyz" in readme
     assert "VITE_SUPPORTDOC_API_BASE_URL=http://127.0.0.1:9001" in env_example
 
 
@@ -70,9 +75,13 @@ def test_repo_docs_link_to_frontend_scaffold_and_local_startup() -> None:
     aws_note = Path("docs/architecture/aws_deployment.md").read_text(encoding="utf-8")
     validation_index = Path("docs/validation/README.md").read_text(encoding="utf-8")
 
-    assert "## 7C. Local browser demo scaffold" in readme_content
+    assert "## 7C. Local browser demo" in readme_content
     assert "frontend/README.md" in readme_content
     assert "VITE_SUPPORTDOC_API_BASE_URL" in readme_content
     assert "^20.19.0 || >=22.12.0" in readme_content
-    assert "checked-in React SPA scaffold under `frontend/`" in aws_note
-    assert "thin local browser scaffold now exists under `frontend/`" in validation_index
+    assert "live `POST /query` submission" in readme_content
+    assert "checked-in React SPA browser demo under `frontend/`" in aws_note
+    assert (
+        "thin local browser demo now exists under `frontend/` and can call the live local API"
+        in validation_index
+    )
