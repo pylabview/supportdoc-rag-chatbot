@@ -38,6 +38,65 @@ API-first MVP validation with reviewed evidence, documented smoke paths, and sou
 ### Next Up
 - Publish the final readiness report and closure checklist for Epic 10.
 
+## 2A. Demo day quick start
+
+For a boring first run, use the backend in **fixture mode** and the checked-in browser demo under `frontend/`. Fixture mode is the canonical first-run path because it uses deterministic checked-in trust fixtures, so you can demo the local API and browser UI together without a model server or local retrieval artifacts. Artifact mode is the optional second path once you already have local `chunks.jsonl` and FAISS files.
+
+### Canonical first run: fixture mode
+
+1. Refresh the Python environment for the local API shell:
+
+```bash
+uv sync --locked --extra dev-tools --extra faiss
+```
+
+2. In terminal A, start the backend first:
+
+```bash
+./scripts/run-api-local.sh
+```
+
+3. In terminal B, start the browser demo against that backend:
+
+```bash
+cd frontend
+node -v
+npm ci
+npm run dev
+```
+
+What to expect:
+
+- backend base URL: `http://127.0.0.1:9001`
+- backend probes: `GET /healthz` and `GET /readyz`
+- backend query route: `POST /query`
+- browser demo URL: `http://127.0.0.1:5173`
+- frontend API override: `VITE_SUPPORTDOC_API_BASE_URL` (defaults to `http://127.0.0.1:9001`)
+- frontend runtime: Node `^20.19.0 || >=22.12.0`
+
+### Optional second path: artifact mode
+
+Use artifact mode only after you already generated local retrieval artifacts. In plain English: fixture mode serves checked-in deterministic answers for a predictable first demo, while artifact mode uses your local `chunks.jsonl` plus FAISS files so the backend can answer from your generated retrieval artifacts.
+
+Start the backend in terminal A with:
+
+```bash
+SUPPORTDOC_LOCAL_API_MODE=artifact ./scripts/run-api-local.sh
+```
+
+Then keep the same frontend steps in terminal B:
+
+```bash
+cd frontend
+node -v
+npm ci
+npm run dev
+```
+
+If your artifact files live outside the default `data/processed/` paths, set the documented `SUPPORTDOC_QUERY_ARTIFACT_*` override variables from `src/supportdoc_rag_chatbot/config.py` before starting the backend.
+
+For the expanded local run notes and the focused frontend startup note, see `README.md` section `7C. Local browser demo` and `frontend/README.md`.
+
 ---
 
 ## 3. Architecture Overview
@@ -534,28 +593,45 @@ If artifact-mode container support is needed later, it should be added as an exp
 
 Epic 11 now includes a thin local React SPA under `frontend/`. It stays intentionally small: one page, one question box, one submit button, one result panel, and one status area aligned to `docs/process/browser_demo_contract.md`.
 
-### Start the frontend locally
+### Canonical first-run path: fixture mode
 
-Start the local API first:
+Start the backend first in fixture mode. This is the canonical first-run path because it returns deterministic checked-in responses and does not require local retrieval artifacts or a model server.
 
 ```bash
 ./scripts/run-api-local.sh
 ```
 
-Then boot the browser demo:
+Then start the browser demo in a second terminal:
 
 ```bash
 cd frontend
 node -v
-npm install
+npm ci
 npm run dev
 ```
 
-Use Node `^20.19.0 || >=22.12.0` for the Vite-based app. The committed `frontend/.npmrc` also keeps the lockfile registry-neutral for local installs on macOS and Linux.
+Use Node `^20.19.0 || >=22.12.0` for the Vite-based app. The committed `frontend/.npmrc` keeps the lockfile registry-neutral for local installs on macOS and Linux.
 
-The Vite dev server binds to `http://127.0.0.1:5173` by default.
+Startup order and local addresses:
 
-### API base URL override
+- start the backend first on `http://127.0.0.1:9001`
+- then start the Vite dev server on `http://127.0.0.1:5173`
+- the browser UI probes `GET /readyz` for operator-friendly status
+- the question form submits `POST /query` to the live backend
+
+### Optional second path: artifact mode
+
+Artifact mode is the follow-on path after you already have the local retrieval artifacts. In user-friendly terms: fixture mode is for a predictable first demo from checked-in responses, while artifact mode is for testing the browser UI against your locally generated `chunks.jsonl` and FAISS index files.
+
+Start the backend in artifact mode with:
+
+```bash
+SUPPORTDOC_LOCAL_API_MODE=artifact ./scripts/run-api-local.sh
+```
+
+Keep the same frontend startup commands after that. If your artifact files are not in the default `data/processed/` locations, set the documented `SUPPORTDOC_QUERY_ARTIFACT_CHUNKS_PATH`, `SUPPORTDOC_QUERY_ARTIFACT_INDEX_PATH`, `SUPPORTDOC_QUERY_ARTIFACT_INDEX_METADATA_PATH`, and `SUPPORTDOC_QUERY_ARTIFACT_ROW_MAPPING_PATH` overrides before launching the backend.
+
+### API base URL and local overrides
 
 The frontend reads `VITE_SUPPORTDOC_API_BASE_URL` and falls back to `http://127.0.0.1:9001`. To point the browser demo at a different local backend, copy `frontend/.env.example` to `frontend/.env.local` and edit the value.
 
@@ -564,17 +640,37 @@ cd frontend
 cp .env.example .env.local
 ```
 
+Other local workflow knobs that matter for the combined backend + browser demo run:
+
+- `SUPPORTDOC_LOCAL_API_MODE=fixture|artifact`
+- `SUPPORTDOC_LOCAL_API_HOST=127.0.0.1`
+- `SUPPORTDOC_LOCAL_API_PORT=9001`
+- `SUPPORTDOC_LOCAL_API_RELOAD=true|false`
+- `VITE_SUPPORTDOC_API_BASE_URL=http://127.0.0.1:9001`
+
 ### Current scope of the browser demo
 
 - one-page React SPA
 - live `POST /query` submission with the frozen request shape
-- supported-answer rendering from `final_answer`
-- refusal rendering from `final_answer` plus optional `reason_code`
+- supported-answer rendering from `final_answer` with visible citation markers
+- explicit refusal rendering from `refusal.is_refusal` plus visible `reason_code`
+- marker-only evidence behavior aligned to `docs/process/browser_demo_contract.md`
+- small warning not to paste secrets or sensitive data into the demo
 - local empty-input validation and disabled submit while loading
 - tiny `/readyz` status indicator for local operator diagnostics
 - no auth, persistence, client-side routing, or rich evidence cards yet
 
-The FastAPI backend also accepts browser requests from the local Vite dev origins so the SPA can call the API directly during local development.
+The FastAPI backend also accepts browser requests from the local Vite dev origins so the SPA can call the API directly during local development. The current `/query` contract does not expose evidence text, source URL, or attribution to the browser, so the UI stays on citation markers only for now.
+
+### Browser demo smoke
+
+From the repo root:
+
+```bash
+bash scripts/smoke-browser-demo.sh
+```
+
+This combined smoke path starts the backend in fixture mode, waits for `GET /readyz`, validates one supported `POST /query` response, builds the SPA with `VITE_SUPPORTDOC_API_BASE_URL` pointed at that backend, and briefly serves `frontend/dist/` on `http://127.0.0.1:4173` to confirm the local browser demo stack boots cleanly.
 
 See `frontend/README.md` for the focused frontend startup note.
 

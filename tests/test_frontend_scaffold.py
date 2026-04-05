@@ -51,6 +51,8 @@ def test_frontend_shell_contains_required_browser_demo_regions() -> None:
         "loading",
         "Refresh backend status",
         "Citation markers",
+        "Citation markers only",
+        "Do not paste secrets",
     ):
         assert required_text in content
 
@@ -60,13 +62,16 @@ def test_frontend_readme_and_env_example_document_local_startup_and_api_base_url
     env_example = (FRONTEND_DIR / ".env.example").read_text(encoding="utf-8")
 
     assert "./scripts/run-api-local.sh" in readme
-    assert "npm install" in readme
+    assert "npm ci" in readme
     assert "npm run dev" in readme
     assert "^20.19.0 || >=22.12.0" in readme
     assert "VITE_SUPPORTDOC_API_BASE_URL" in readme
     assert "http://127.0.0.1:9001" in readme
     assert "POST /query" in readme
     assert "GET /readyz" in readme
+    assert "citation markers only" in readme
+    assert "Do not paste secrets" in readme
+    assert "bash scripts/smoke-browser-demo.sh" in readme
     assert "VITE_SUPPORTDOC_API_BASE_URL=http://127.0.0.1:9001" in env_example
 
 
@@ -80,8 +85,10 @@ def test_repo_docs_link_to_frontend_scaffold_and_local_startup() -> None:
     assert "VITE_SUPPORTDOC_API_BASE_URL" in readme_content
     assert "^20.19.0 || >=22.12.0" in readme_content
     assert "live `POST /query` submission" in readme_content
+    assert "bash scripts/smoke-browser-demo.sh" in readme_content
     assert "checked-in React SPA browser demo under `frontend/`" in aws_note
     assert (
         "thin local browser demo now exists under `frontend/` and can call the live local API"
         in validation_index
     )
+    assert "scripts/smoke-browser-demo.sh" in validation_index
