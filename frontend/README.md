@@ -113,6 +113,8 @@ bash scripts/smoke-browser-demo.sh
 
 This combined fixture-mode browser-demo smoke path starts the backend in fixture mode, waits for `GET /readyz`, validates one supported `POST /query` response, builds the SPA from the committed lockfile, and briefly serves `frontend/dist/` so you can confirm the local browser demo stack boots.
 
+For the short manual smoke checklist and presentation sequence, see `docs/validation/browser_smoke_checklist.md`.
+
 ## Other useful commands
 
 ```bash

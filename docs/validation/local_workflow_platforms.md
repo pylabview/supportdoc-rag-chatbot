@@ -1,13 +1,13 @@
 # Local workflow notes for macOS arm64 and Pop!_OS x86_64
 
-This note keeps the **current local browser-demo scaffold path** in one place for the two target development machines.
+This note keeps the **current local browser-demo path** in one place for the two target development machines.
 
 Current repo scope:
 
 - the backend local shell can start in fixture mode with `./scripts/run-api-local.sh`
-- the browser UI under `frontend/` is still a thin scaffold
-- the scaffold boots locally and points at the expected API base URL
-- the scaffold does **not** send live `POST /query` requests yet
+- the browser UI under `frontend/` remains intentionally thin
+- the checked-in browser demo boots locally and points at the expected API base URL
+- the checked-in browser demo does send live `POST /query` requests to the local backend
 
 ## Runtime baselines
 
@@ -109,3 +109,6 @@ Artifact mode in this repo still defaults to fixture generation unless you expli
 - the baseline local browser scaffold path on both target machines does **not** require `llm-vllm`
 
 Treat `llm-vllm` as a later Linux-only inference option, not as a prerequisite for the first local browser-demo run.
+
+
+For the presentation-ready browser smoke checklist, see `docs/validation/browser_smoke_checklist.md`.

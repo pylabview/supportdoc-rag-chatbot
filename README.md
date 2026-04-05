@@ -643,6 +643,8 @@ bash scripts/smoke-browser-demo.sh
 
 That smoke path boots the fixture backend, waits for `GET /readyz`, validates one supported `POST /query` response, builds the frontend, and briefly serves the committed browser demo assets.
 
+For the short manual browser smoke checklist and presentation-ready demo sequence used before AWS deployment work, see `docs/validation/browser_smoke_checklist.md`.
+
 ### Current scope of the scaffold
 
 - one-page React SPA
