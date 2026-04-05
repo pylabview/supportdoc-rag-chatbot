@@ -62,7 +62,7 @@ def test_frontend_readme_and_env_example_document_local_startup_and_api_base_url
     env_example = (FRONTEND_DIR / ".env.example").read_text(encoding="utf-8")
 
     assert "./scripts/run-api-local.sh" in readme
-    assert "npm install" in readme
+    assert "npm ci" in readme
     assert "npm run dev" in readme
     assert "^20.19.0 || >=22.12.0" in readme
     assert "VITE_SUPPORTDOC_API_BASE_URL" in readme

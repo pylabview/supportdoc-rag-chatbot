@@ -56,10 +56,14 @@ def test_frontend_readme_documents_live_backend_wiring_and_readyz_status_probe()
     assert "Do not paste secrets" in content
 
 
-def test_browser_demo_smoke_script_builds_and_serves_the_frontend() -> None:
+def test_browser_demo_smoke_script_exercises_fixture_backend_and_serves_the_frontend() -> None:
     content = SMOKE_SCRIPT.read_text(encoding="utf-8")
 
+    assert "./scripts/run-api-local.sh --mode fixture" in content
+    assert "/readyz" in content
+    assert "What is a Pod?" in content
+    assert "VITE_SUPPORTDOC_API_BASE_URL" in content
     assert "npm ci" in content
     assert "npm run build" in content
     assert "python3 -m http.server" in content
-    assert "curl -fsS http://127.0.0.1:4173/" in content
+    assert "SupportDoc Browser Demo" in content
