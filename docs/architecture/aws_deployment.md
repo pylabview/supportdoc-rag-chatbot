@@ -39,6 +39,7 @@ What already exists in the ZIP:
 - local retrieval artifacts built around `chunks.jsonl` plus FAISS index files
 - canonical trust-layer response schema and smoke validation
 - structured backend orchestration for retrieval, refusal gating, generation, and citation validation
+- a checked-in React SPA scaffold under `frontend/` for the local browser demo
 - a checked-in React SPA browser demo under `frontend/` that can call the local API in development
 
 What does **not** exist yet in the ZIP:
