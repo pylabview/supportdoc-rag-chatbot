@@ -71,7 +71,7 @@ The first browser demo uses exactly these user-visible states.
 | --- | --- | --- | --- |
 | `empty_input` | Initial load, or the composer value trims to an empty string | Disable submit. Show no answer panel. Do not call `/query`. | User enters a non-empty question. |
 | `loading` | User submits a non-empty question | Disable submit and replace any prior result panel with a single loading treatment. No partial rendering or streaming. | `POST /query` resolves or fails. |
-| `supported_answer` | `POST /query` returns `200` and `refusal.is_refusal == false` | Render `final_answer` as the primary answer text. Keep the parsed `citations` in state, but do not render evidence cards in the first iteration. | User edits input or submits another question. |
+| `supported_answer` | `POST /query` returns `200` and `refusal.is_refusal == false` | Render `final_answer` as the primary answer text with visible citation markers. Keep the parsed `citations` in state and allow a small marker list, but do not render evidence cards or excerpts in the first iteration. | User edits input or submits another question. |
 | `refusal` | `POST /query` returns `200` and `refusal.is_refusal == true` | Render `final_answer` as the primary refusal text. The UI may optionally show `refusal.reason_code` as a small diagnostic label, but it does not branch to different layouts per reason code. | User edits input or submits another question. |
 | `backend_unavailable` | Network failure, timeout, or any non-`200` response from `/query`; optional `/readyz` failure if the browser probes readiness | Show one generic backend-unavailable treatment with retry affordance. Do not attempt partial answer rendering. The thin client may surface backend `error.message` when present, but it does not create extra error-specific states. | Retry succeeds, or the user returns to editing input. |
 
@@ -87,7 +87,7 @@ The browser must interpret the response fields like this.
 | Field | Browser behavior | Notes |
 | --- | --- | --- |
 | `final_answer` | Always render this as the main visible text for a `200` response. | This applies to both supported answers and refusals. The UI does not concatenate `final_answer` with any other text. |
-| `citations` | Preserve in state with the current result. | For supported answers this list is non-empty by contract. For refusals it is empty by contract. The first browser demo does not use this list to build evidence cards. |
+| `citations` | Preserve in state with the current result. | For supported answers this list is non-empty by contract. For refusals it is empty by contract. The first browser demo uses this list for visible marker rendering only and does not use it to build evidence cards. |
 | `refusal.is_refusal` | Use this as the single branch that selects `supported_answer` vs `refusal`. | Do not infer refusal from citation count or string matching. |
 | `refusal.reason_code` | Optional diagnostic or analytics field only. | The first browser demo does not create separate user-facing flows for `insufficient_evidence`, `no_relevant_docs`, `citation_validation_failed`, or `out_of_scope`. |
 | `refusal.message` | Treat as duplicate refusal metadata rather than a second visible body. | The trust contract requires it for refusals, but the first browser demo renders `final_answer` only. |
@@ -107,9 +107,11 @@ The first browser demo renders **citation markers only**.
 That means:
 
 - the browser renders `final_answer` exactly as returned, including inline markers such as `[1]`
+- the browser may echo the returned markers in a small marker list, but it still treats that as marker-only evidence behavior rather than an evidence-card UI
 - the browser does **not** attempt to dereference `doc_id`, `chunk_id`, or offsets on the client
 - the browser does **not** render expandable evidence cards, modals, or drawers in this first iteration
 - the browser does **not** make the markers clickable in this first iteration
+- the current `/query` contract does **not** expose evidence text, source URL, or attribution to the browser
 
 This is the smallest viable contract because the current `QueryResponse` only exposes citation pointers. It does **not** return the evidence text and source payload needed for a clean rich-card UI.
 
