@@ -7,20 +7,15 @@ Use it when you want to answer these questions quickly:
 - what is the canonical local API smoke path?
 - what is the canonical artifact-mode smoke path?
 - what is the canonical packaged container runtime smoke path?
-- what is the combined fixture-mode browser-demo smoke path?
-- where is the short browser smoke checklist and demo sequence for live presentation?
 - where is the reviewed evidence package for the MVP trust pass?
 
-The current validated scope is intentionally **backend / API first**, but the local browser story is now documented here too:
+The current validated scope is intentionally **backend / API first**:
 
 - fixture-mode local API smoke is supported,
 - artifact-mode local API smoke is supported,
 - backend container runtime smoke is supported in fixture mode,
 - reviewed evidence correctness artifacts are committed,
-- a thin local browser scaffold now exists under `frontend/`,
-- a thin local browser demo now exists under `frontend/` and can call the live local API,
-- the browser smoke path uses the fixture backend and checked-in frontend assets,
-- the short browser smoke checklist and demo sequence are published for manual validation, and
+- thin local browser scaffold now exists under `frontend/`,
 - artifact-mode inside the container image remains deferred.
 
 ## Canonical commands
@@ -47,32 +42,6 @@ This path creates a temporary artifact fixture, starts the backend in artifact m
 
 Docs: `README.md` section `7A. Local API Smoke Workflow`
 
-### Combined fixture-mode browser-demo smoke path
-
-Run the browser demo smoke from the repo root:
-
-```bash
-bash scripts/smoke-browser-demo.sh
-```
-
-This combined fixture-mode browser-demo smoke path starts the fixture backend with `./scripts/run-api-local.sh`, waits for `GET /readyz`, validates one supported `POST /query` response, builds the checked-in frontend, and briefly serves the browser assets.
-
-Docs: `README.md` sections `2A. Demo day quick start` and `7C. Local browser demo`
-
-### Browser smoke checklist and demo sequence
-
-Use the short manual browser smoke checklist when you need presentation-ready proof that the live browser UI handles:
-
-- supported answer in canonical fixture mode,
-- one refusal,
-- empty-input guarding,
-- backend unavailable behavior, and
-- the supplemental long-answer / multi-citation visual check.
-
-This checklist uses **fixture mode as the canonical demo path** and includes a short presentation sequence plus a reusable notes block for final report/demo writeups.
-
-Docs: `docs/validation/browser_smoke_checklist.md`
-
 ### Container runtime smoke
 
 Run the packaged backend runtime smoke path:
@@ -98,10 +67,6 @@ uv run python -m supportdoc_rag_chatbot smoke-trust-schema \
 
 Docs: `docs/process/trust_response_contract.md`
 
-### Local browser scaffold platform note
-
-For the macOS arm64 and Pop!_OS x86_64 local scaffold path, Python baseline, artifact-mode prerequisites, and the Linux-only `llm-vllm` caveat, see `docs/validation/local_workflow_platforms.md`.
-
 ## Reviewed evidence package
 
 The final MVP trust pass is documented with these committed artifacts:
@@ -119,10 +84,29 @@ The final MVP trust pass is documented with these committed artifacts:
 - `README.md` — repo overview, local workflows, validation entry points, and deployment framing
 - `docs/data/corpus.md` — corpus snapshot and corpus-governance contract
 - `docs/architecture/aws_deployment.md` — canonical AWS baseline and deferred scope labels
+- `docs/validation/report_and_aws_handoff_notes.md` — report-ready notes for the no-fine-tuning baseline, retrieval preparation flow, and UI/AWS handoff
 - `docs/process/retrieval_comparison_notes.md` — retrieval-only baseline comparison and provisional hybrid recommendation
-- `docs/validation/local_workflow_platforms.md` — macOS arm64 and Pop!_OS x86_64 local workflow notes, Python baseline, artifact prerequisites, and the Linux-only `llm-vllm` note
-- `docs/validation/browser_smoke_checklist.md` — manual browser smoke checklist, long-answer visual check, and demo sequence
 
 ## Readiness-report location
 
 This directory is also the canonical home for the final Epic 10 closeout artifact. When the MVP readiness report is published, it should live alongside the files above so reviewers can find smoke proofs and reviewed trust evidence from one place.
+
+
+## Browser demo docs and smoke path
+
+The combined fixture-mode browser-demo smoke path is the canonical operator-facing browser check for the current local demo layer.
+
+Run it from the repo root:
+
+```bash
+bash scripts/smoke-browser-demo.sh
+```
+
+This path starts `./scripts/run-api-local.sh`, checks one supported answer in canonical fixture mode, then builds and serves the browser assets long enough to confirm the thin local browser scaffold now exists under `frontend/` and boots against the local backend.
+
+Use these companion docs together:
+
+- `docs/validation/browser_smoke_checklist.md` — manual browser smoke checklist with a supported answer in canonical fixture mode, refusal, empty-input, backend-unavailable, and long-answer visual checks
+- `docs/validation/local_workflow_platforms.md` — macOS arm64 / Pop!_OS x86_64 setup notes, Python 3.13 baseline, and artifact prerequisites
+- `README.md` sections `2A. Demo day quick start` and `7C. Local browser demo` — canonical first-run path and local browser scaffold notes
+- `frontend/README.md` — browser startup, `POST /query` wiring, and `/readyz` status probe details

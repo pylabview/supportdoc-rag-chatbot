@@ -4,6 +4,8 @@ This document is the practical operations companion to `docs/architecture/aws_de
 
 It keeps one goal in focus: make the chosen AWS baseline believable and operable for a capstone demo without pretending this is a full production platform.
 
+For report-ready UI wording and the local-browser-demo to AWS handoff notes that match this same baseline, see `docs/validation/report_and_aws_handoff_notes.md`.
+
 These notes are intentionally directional rather than price-quote accurate. They describe the expected cost shape, the services that matter most, and the smallest set of operational checks needed to run the baseline safely.
 
 ## Scope and baseline alignment
@@ -52,6 +54,19 @@ Characteristics:
 
 This posture is useful for short periods, but it should not be the default outside final integration or demo week.
 
+## UI-layer configuration boundary
+
+The frontend remains a thin client in both local and AWS stories. That means the browser should carry only public UI configuration, such as the API base URL and non-secret environment labels.
+
+The browser must not receive:
+
+- database credentials
+- inference credentials
+- artifact paths
+- retrieval tuning values that are meant to stay backend-only
+
+This keeps the React + FastAPI split aligned with the baseline AWS plan and prevents the UI layer from becoming a second operational control plane.
+
 ## Baseline service assumptions
 
 | Layer | Baseline service | Planning assumption |
@@ -63,7 +78,7 @@ This posture is useful for short periods, but it should not be the default outsi
 | Artifact storage | S3 | Versioned corpus snapshots, processed artifacts, and evaluation outputs |
 | Observability | CloudWatch Logs / Metrics / Alarms | Small baseline telemetry footprint |
 | Secrets and config | Secrets Manager + SSM Parameter Store | Secrets stay out of the container image |
-| Frontend | Amplify Hosting | Deferred until frontend hosting joins the deployable AWS baseline |
+| Frontend | Amplify Hosting | Deferred until the frontend exists in the repo |
 
 ## Baseline cost table
 
