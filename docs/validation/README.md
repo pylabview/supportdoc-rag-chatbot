@@ -8,6 +8,7 @@ Use it when you want to answer these questions quickly:
 - what is the canonical artifact-mode smoke path?
 - what is the canonical packaged container runtime smoke path?
 - what is the combined fixture-mode browser-demo smoke path?
+- where is the short browser smoke checklist and demo sequence for live presentation?
 - where is the reviewed evidence package for the MVP trust pass?
 
 The current validated scope is intentionally **backend / API first**, but the local browser story is now documented here too:
@@ -19,6 +20,7 @@ The current validated scope is intentionally **backend / API first**, but the lo
 - a thin local browser scaffold now exists under `frontend/`,
 - a thin local browser demo now exists under `frontend/` and can call the live local API,
 - the browser smoke path uses the fixture backend and checked-in frontend assets,
+- the short browser smoke checklist and demo sequence are published for manual validation, and
 - artifact-mode inside the container image remains deferred.
 
 ## Canonical commands
@@ -57,6 +59,20 @@ This combined fixture-mode browser-demo smoke path starts the fixture backend wi
 
 Docs: `README.md` sections `2A. Demo day quick start` and `7C. Local browser demo`
 
+### Browser smoke checklist and demo sequence
+
+Use the short manual browser smoke checklist when you need presentation-ready proof that the live browser UI handles:
+
+- supported answer in canonical fixture mode,
+- one refusal,
+- empty-input guarding,
+- backend unavailable behavior, and
+- the supplemental long-answer / multi-citation visual check.
+
+This checklist uses **fixture mode as the canonical demo path** and includes a short presentation sequence plus a reusable notes block for final report/demo writeups.
+
+Docs: `docs/validation/browser_smoke_checklist.md`
+
 ### Container runtime smoke
 
 Run the packaged backend runtime smoke path:
@@ -74,7 +90,10 @@ Docs: `README.md` section `7B. Containerized Local API Smoke Workflow`
 Validate the canonical `QueryResponse` fixtures against the committed schema:
 
 ```bash
-uv run python -m supportdoc_rag_chatbot smoke-trust-schema   --schema docs/contracts/query_response.schema.json   --answer-fixture docs/contracts/query_response.answer.example.json   --refusal-fixture docs/contracts/query_response.refusal.example.json
+uv run python -m supportdoc_rag_chatbot smoke-trust-schema \
+  --schema docs/contracts/query_response.schema.json \
+  --answer-fixture docs/contracts/query_response.answer.example.json \
+  --refusal-fixture docs/contracts/query_response.refusal.example.json
 ```
 
 Docs: `docs/process/trust_response_contract.md`
@@ -102,6 +121,7 @@ The final MVP trust pass is documented with these committed artifacts:
 - `docs/architecture/aws_deployment.md` — canonical AWS baseline and deferred scope labels
 - `docs/process/retrieval_comparison_notes.md` — retrieval-only baseline comparison and provisional hybrid recommendation
 - `docs/validation/local_workflow_platforms.md` — macOS arm64 and Pop!_OS x86_64 local workflow notes, Python baseline, artifact prerequisites, and the Linux-only `llm-vllm` note
+- `docs/validation/browser_smoke_checklist.md` — manual browser smoke checklist, long-answer visual check, and demo sequence
 
 ## Readiness-report location
 
