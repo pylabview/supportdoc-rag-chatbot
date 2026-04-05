@@ -7,15 +7,18 @@ Use it when you want to answer these questions quickly:
 - what is the canonical local API smoke path?
 - what is the canonical artifact-mode smoke path?
 - what is the canonical packaged container runtime smoke path?
+- what is the combined fixture-mode browser-demo smoke path?
 - where is the reviewed evidence package for the MVP trust pass?
 
-The current validated scope is intentionally **backend / API first**:
+The current validated scope is intentionally **backend / API first**, but the local browser story is now documented here too:
 
 - fixture-mode local API smoke is supported,
 - artifact-mode local API smoke is supported,
 - backend container runtime smoke is supported in fixture mode,
 - reviewed evidence correctness artifacts are committed,
-- a thin local browser demo now exists under `frontend/` and can call the live local API, with a combined fixture-mode browser-demo smoke path now committed under `scripts/smoke-browser-demo.sh`,
+- a thin local browser scaffold now exists under `frontend/`,
+- a thin local browser demo now exists under `frontend/` and can call the live local API,
+- the browser smoke path uses the fixture backend and checked-in frontend assets,
 - artifact-mode inside the container image remains deferred.
 
 ## Canonical commands
@@ -42,6 +45,18 @@ This path creates a temporary artifact fixture, starts the backend in artifact m
 
 Docs: `README.md` section `7A. Local API Smoke Workflow`
 
+### Combined fixture-mode browser-demo smoke path
+
+Run the browser demo smoke from the repo root:
+
+```bash
+bash scripts/smoke-browser-demo.sh
+```
+
+This combined fixture-mode browser-demo smoke path starts the fixture backend with `./scripts/run-api-local.sh`, waits for `GET /readyz`, validates one supported `POST /query` response, builds the checked-in frontend, and briefly serves the browser assets.
+
+Docs: `README.md` sections `2A. Demo day quick start` and `7C. Local browser demo`
+
 ### Container runtime smoke
 
 Run the packaged backend runtime smoke path:
@@ -54,30 +69,19 @@ This path builds the checked-in backend image, starts it with `docker run`, wait
 
 Docs: `README.md` section `7B. Containerized Local API Smoke Workflow`
 
-### Browser demo smoke
-
-Start the fixture-mode backend, build the checked-in browser demo, and briefly serve the local stack:
-
-```bash
-bash scripts/smoke-browser-demo.sh
-```
-
-This path starts `./scripts/run-api-local.sh` in fixture mode, waits for `/readyz`, validates one supported `/query` response, then builds the SPA and serves `frontend/dist/` long enough to confirm the local UI stack boots.
-
-Docs: `README.md` sections `2A. Demo day quick start` and `7C. Local browser demo`
-
 ### Trust-contract schema smoke
 
 Validate the canonical `QueryResponse` fixtures against the committed schema:
 
 ```bash
-uv run python -m supportdoc_rag_chatbot smoke-trust-schema \
-  --schema docs/contracts/query_response.schema.json \
-  --answer-fixture docs/contracts/query_response.answer.example.json \
-  --refusal-fixture docs/contracts/query_response.refusal.example.json
+uv run python -m supportdoc_rag_chatbot smoke-trust-schema   --schema docs/contracts/query_response.schema.json   --answer-fixture docs/contracts/query_response.answer.example.json   --refusal-fixture docs/contracts/query_response.refusal.example.json
 ```
 
 Docs: `docs/process/trust_response_contract.md`
+
+### Local browser scaffold platform note
+
+For the macOS arm64 and Pop!_OS x86_64 local scaffold path, Python baseline, artifact-mode prerequisites, and the Linux-only `llm-vllm` caveat, see `docs/validation/local_workflow_platforms.md`.
 
 ## Reviewed evidence package
 
@@ -97,6 +101,7 @@ The final MVP trust pass is documented with these committed artifacts:
 - `docs/data/corpus.md` — corpus snapshot and corpus-governance contract
 - `docs/architecture/aws_deployment.md` — canonical AWS baseline and deferred scope labels
 - `docs/process/retrieval_comparison_notes.md` — retrieval-only baseline comparison and provisional hybrid recommendation
+- `docs/validation/local_workflow_platforms.md` — macOS arm64 and Pop!_OS x86_64 local workflow notes, Python baseline, artifact prerequisites, and the Linux-only `llm-vllm` note
 
 ## Readiness-report location
 
