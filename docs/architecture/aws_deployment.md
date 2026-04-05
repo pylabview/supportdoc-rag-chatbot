@@ -13,6 +13,8 @@ Companion cost and operations notes for the same baseline live in `docs/ops/cost
 
 The runtime / trust validation entry point for this same API-first MVP lives in `docs/validation/README.md`.
 
+Report-facing UI wording and the later browser-to-AWS handoff notes live in `docs/validation/report_and_aws_handoff_notes.md`.
+
 ## Baseline decision summary
 
 The capstone MVP will use this default AWS path:
@@ -25,7 +27,7 @@ The capstone MVP will use this default AWS path:
 - **Secrets / config:** AWS Secrets Manager for secrets and Systems Manager Parameter Store for non-secret runtime configuration
 - **Future frontend hosting:** AWS Amplify Hosting for the React SPA when the frontend is ready
 
-This baseline matches the proposal's intended deployment direction while staying explicit about what is already implemented in the repo versus what is still deferred.
+This baseline matches the proposal's intended deployment direction while staying explicit about what is already implemented in the repo versus what is still deferred. The browser layer stays aligned to the same React + FastAPI split described in `docs/validation/report_and_aws_handoff_notes.md`.
 
 ## Current repo state
 
@@ -39,13 +41,16 @@ What already exists in the ZIP:
 - local retrieval artifacts built around `chunks.jsonl` plus FAISS index files
 - canonical trust-layer response schema and smoke validation
 - structured backend orchestration for retrieval, refusal gating, generation, and citation validation
-- a checked-in React SPA scaffold under `frontend/` for the local browser demo
-- a checked-in React SPA browser demo under `frontend/` that can call the local API in development
+
+What is available now for the UI layer:
+
+- a checked-in React SPA scaffold under `frontend/` for the thin local browser demo
 
 What does **not** exist yet in the ZIP:
 
 - a production AWS deployment definition
-- frontend deployment packaging or hosting configuration
+- a production-ready hosted frontend deployment
+- container packaging for deployment
 - a cloud retrieval adapter for `pgvector`
 - a dedicated AWS inference deployment
 
@@ -61,7 +66,7 @@ It is a subset of the baseline path:
 - keep the public entry point at an ALB
 - wire CloudWatch logging and basic ECS / ALB health monitoring
 - store deployment-time artifacts and future ingestion outputs in S3
-- keep frontend hosting out of scope for now
+- keep the frontend out of scope for now
 
 For immediate deployment readiness, the backend can start in **fixture mode** and prove:
 
@@ -103,6 +108,19 @@ The baseline assumes one VPC with public and private subnets:
   - EC2 inference accepts traffic only from the ECS service
 
 The vector store and inference host are not publicly reachable.
+
+## UI layer handoff notes
+
+The current repo stays **API-first**, but the UI direction is already fixed: keep a thin React SPA in front of the FastAPI backend instead of moving trust logic into the browser.
+
+The handoff boundary is:
+
+- **browser-owned:** question input, loading/error state, answer/refusal rendering, and citation display
+- **backend-owned:** retrieval, generation, citation validation, refusal policy, and runtime secrets/config
+
+For local use, the browser should call the same FastAPI contract that the current repo already validates (`/query`, `/healthz`, and `/readyz`). For AWS, the same contract should stay behind the ALB/ECS service while the React SPA is hosted separately on Amplify.
+
+Use `docs/validation/report_and_aws_handoff_notes.md` when you need report-ready wording for this same UI/backend split.
 
 ## Request flow
 
@@ -191,7 +209,6 @@ Optional OpenTelemetry tracing is deferred. CloudWatch-first logging is the defa
 - API-first backend exists
 - local fixture and artifact retrieval flows exist
 - local FAISS artifacts are the current retrieval baseline
-- a thin local frontend browser demo exists under `frontend/` and can submit live local `/query` requests
 - no frontend deployment work is committed yet
 - no AWS deployment packaging is committed yet
 
@@ -221,7 +238,7 @@ The following points still need explicit implementation decisions in later infra
 1. **Inference server choice:** vLLM vs TGI for the first EC2 GPU deployment
 2. **Retrieval promotion job:** whether `pgvector` loading happens from a one-off script, ECS task, or CI/CD step
 3. **Artifact promotion path:** which exact S3 prefixes become the stable handoff points for deployment-ready data
-4. **Frontend cutover timing:** whether the capstone demo initially ships API-only or with the React frontend query flow enabled
+4. **Frontend cutover timing:** whether the capstone demo initially ships API-only or with the React frontend enabled
 5. **Dependency-aware readiness:** whether `/readyz` should grow deep checks for RDS and inference before final deployment
 
 ## Diagram source
