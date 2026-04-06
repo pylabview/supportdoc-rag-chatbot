@@ -50,7 +50,7 @@ npm install
 npm ci
 ```
 
-The FastAPI backend accepts browser requests from the local Vite dev origins, so the SPA can call the live API directly during local development.
+The FastAPI backend accepts browser requests from the local Vite dev origins by default, so the SPA can call the live API directly during local development.
 
 ## Optional second path: artifact mode
 
@@ -87,6 +87,16 @@ cp .env.example .env.local
 ```dotenv
 VITE_SUPPORTDOC_API_BASE_URL=http://127.0.0.1:9001
 ```
+
+The value should stay at the browser-visible API origin only, for example `https://api.example.com` without a trailing slash.
+
+For AWS Amplify Hosting, keep using this same variable name as the public browser-side seam:
+
+- set `VITE_SUPPORTDOC_API_BASE_URL` in the Amplify app or branch environment variables
+- point it at the public backend origin exposed by the ALB or your API DNS name
+- keep secrets, retrieval settings, and backend-only runtime values out of the browser environment
+
+If you host the SPA separately from the backend, the FastAPI service must also allow that frontend origin through `SUPPORTDOC_API_CORS_ALLOWED_ORIGINS` or `SUPPORTDOC_API_CORS_ALLOWED_ORIGIN_REGEX`. Localhost access remains the safe default when those settings are not provided.
 
 ## Live browser behavior
 

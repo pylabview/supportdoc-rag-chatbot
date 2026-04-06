@@ -18,7 +18,7 @@ This note matches the current baseline defined in `docs/architecture/aws_deploym
 - **Object storage:** S3
 - **Logging / metrics:** CloudWatch
 - **Secrets / config:** Secrets Manager plus SSM Parameter Store
-- **Future frontend hosting:** Amplify Hosting later, not part of the default ops footprint yet
+- **Browser hosting:** Amplify Hosting for the checked-in SPA when the separate browser-hosting slice is enabled
 
 The working assumption for planning is one U.S. commercial AWS region, using **`us-west-2` as the default placeholder region** until the final deployment region is explicitly chosen.
 
@@ -56,7 +56,7 @@ This posture is useful for short periods, but it should not be the default outsi
 
 ## UI-layer configuration boundary
 
-The frontend remains a thin client in both local and AWS stories. That means the browser should carry only public UI configuration, such as the API base URL and non-secret environment labels.
+The frontend remains a thin client in both local and AWS stories. That means the browser should carry only public UI configuration, such as `VITE_SUPPORTDOC_API_BASE_URL` and non-secret environment labels.
 
 The browser must not receive:
 
@@ -78,7 +78,7 @@ This keeps the React + FastAPI split aligned with the baseline AWS plan and prev
 | Artifact storage | S3 | Versioned corpus snapshots, processed artifacts, and evaluation outputs |
 | Observability | CloudWatch Logs / Metrics / Alarms | Small baseline telemetry footprint |
 | Secrets and config | Secrets Manager + SSM Parameter Store | Secrets stay out of the container image |
-| Frontend | Amplify Hosting | Deferred until the frontend exists in the repo |
+| Frontend | Amplify Hosting | Optional browser-hosting slice for the checked-in SPA; not required for the backend-shell deploy-now path |
 
 ## Baseline cost table
 
@@ -92,7 +92,7 @@ The table below is intentionally directional. It is meant for planning, not for 
 | Artifact storage | S3 | stored GB-months, requests, lifecycle retention | Low change during demos | Low to moderate growth over time | **Low** | Usually inexpensive, but artifact sprawl should still be controlled |
 | Observability | CloudWatch Logs, metrics, alarms | log ingestion, retention, alarms | Short retention and compact logs | Longer retention and more accumulated volume | **Low to moderate** | Can become noisy if raw prompts or verbose payloads are logged |
 | Secrets / runtime config | Secrets Manager + SSM Parameter Store | stored secrets, API calls | Nearly fixed | Nearly fixed | **Low** | Operationally important, but not a major spend driver |
-| Future frontend | Amplify Hosting | build/deploy activity, hosting, bandwidth | Deferred | Deferred | **Deferred** | Not part of the current repo-backed baseline |
+| Browser hosting | Amplify Hosting | build/deploy activity, hosting, bandwidth | Deferred | Deferred | **Deferred** | Not part of the backend-shell deploy-now baseline |
 
 ## Expected cost shape
 
@@ -200,12 +200,25 @@ Use for non-secret runtime configuration, including:
 - S3 bucket or prefix names
 - retrieval and generation tuning defaults that do not contain secrets
 
+Recommended deploy-now backend-shell values to keep in ECS task environment variables or SSM Parameter Store are:
+
+| Setting | Why it belongs here |
+| --- | --- |
+| `SUPPORTDOC_DEPLOYMENT_TARGET=aws` | turns on the AWS-targeted runtime validation path |
+| `SUPPORTDOC_ENV` | drives the environment label returned by `/readyz` |
+| `SUPPORTDOC_API_CORS_ALLOWED_ORIGINS` or `SUPPORTDOC_API_CORS_ALLOWED_ORIGIN_REGEX` | defines the explicit browser-origin policy for a separately hosted frontend |
+| `SUPPORTDOC_QUERY_RETRIEVAL_MODE=fixture` | keeps the deploy-now backend shell on the supported retrieval path |
+| `SUPPORTDOC_QUERY_GENERATION_MODE=fixture` | keeps the first AWS slice self-contained and deterministic |
+| `SUPPORTDOC_QUERY_GENERATION_BASE_URL` | non-secret service endpoint only when a compatible HTTP generation backend is introduced |
+| `VITE_SUPPORTDOC_API_BASE_URL` | browser-visible API base URL set in Amplify Hosting for the separate SPA |
+
 ### IAM and container handling
 
 - ECS tasks should read secrets/config at runtime through IAM permissions, not from committed files
 - secrets must not be baked into container images
 - local `.env`-style development patterns should not become the cloud deployment source of truth
 - the API should fail closed if required secrets/config are missing or malformed
+- `/healthz` should stay the ALB target-group health path, while `/readyz` stays the operator-facing compatibility check
 
 ## Retention and cleanup guidance
 
@@ -246,9 +259,9 @@ The goal is not full SRE coverage. The goal is a short repeatable checklist that
 3. Start the EC2 GPU inference instance and verify the inference process is healthy.
 4. Confirm RDS is available and accepting connections.
 5. Set the ECS service to the intended desired count.
-6. Wait for the ALB target to report healthy.
+6. Wait for the ALB target to report healthy on the `/healthz` target-group path.
 7. Call `/healthz`.
-8. Call `/readyz`.
+8. Call `/readyz` as the operator-facing compatibility check, not as the ALB health path.
 9. Run one known-good `/query` smoke request.
 10. Check CloudWatch for startup errors before the demo begins.
 

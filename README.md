@@ -98,7 +98,7 @@ This is the main orchestration layer implemented in this repository. It is respo
 - refusal enforcement.
 
 ### Infrastructure Layer
-The deploy-now MVP is **API-first**. The repository currently proves the backend shell, trust contract, local artifact-backed retrieval path, and container/runtime smoke workflows. A future React frontend remains explicitly deferred and is documented only as a later deployment option in `docs/architecture/aws_deployment.md`.
+The deploy-now MVP is still **API-first** for backend deployment, but the repository now also includes a checked-in React SPA scaffold under `frontend/` for the thin local browser demo and the later browser-backed AWS path. The current AWS-ready slice is the backend shell first; separate browser hosting plus cloud retrieval/inference integration are documented in `docs/architecture/aws_deployment.md`.
 
 ### High-Level System Flow
 
@@ -662,7 +662,9 @@ The single closeout status page for Epic 10 now lives at `docs/validation/mvp_re
 
 ## 10. Deployment Overview
 
-The intended long-term deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The **current validated MVP scope in this repo is API-first**: backend runtime proof, local smoke workflows, reviewed trust artifacts, and an AWS baseline that labels the frontend as deferred.
+The intended long-term deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The **current validated MVP scope in this repo is still backend-first**, but it now includes the checked-in local browser demo scaffold and one browser-safe public config seam: `VITE_SUPPORTDOC_API_BASE_URL`.
+
+The deploy-now AWS slice is the backend shell on ECS/ALB in fixture mode. The first browser-backed AWS slice uses the same backend contract plus separately hosted frontend wiring through `VITE_SUPPORTDOC_API_BASE_URL` and explicit backend CORS origin settings. Cloud retrieval (`pgvector`) and production inference integration remain deferred until their adapters exist in code.
 
 The canonical AWS deployment baseline for that path now lives in `docs/architecture/aws_deployment.md`, with the rendered diagram in `docs/diagrams/aws_deployment.md` and the versioned Mermaid source in `docs/diagrams/aws_deployment.mmd`.
 
