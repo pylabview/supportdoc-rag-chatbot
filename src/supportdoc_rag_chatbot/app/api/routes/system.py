@@ -14,7 +14,7 @@ router = APIRouter(tags=["system"])
 @router.get(
     "/healthz",
     response_model=HealthStatusResponse,
-    summary="Liveness probe",
+    summary="Shallow liveness probe for ALB / ECS health checks",
 )
 def get_healthz() -> HealthStatusResponse:
     return HealthStatusResponse(status="ok")
@@ -23,7 +23,7 @@ def get_healthz() -> HealthStatusResponse:
 @router.get(
     "/readyz",
     response_model=ReadinessStatusResponse,
-    summary="Deterministic readiness probe",
+    summary="Operator-facing readiness / compatibility probe",
 )
 def get_readyz(
     settings: Annotated[BackendSettings, Depends(get_request_settings)],

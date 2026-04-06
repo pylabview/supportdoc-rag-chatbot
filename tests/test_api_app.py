@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from supportdoc_rag_chatbot.app.api import app, create_app
 from supportdoc_rag_chatbot.app.schemas import QueryResponse, RefusalReasonCode
@@ -66,6 +68,26 @@ def test_load_backend_settings_reads_env_mapping() -> None:
     )
 
 
+def test_load_backend_settings_reads_aws_cors_env_mapping() -> None:
+    settings = load_backend_settings(
+        {
+            "SUPPORTDOC_DEPLOYMENT_TARGET": "aws",
+            "SUPPORTDOC_ENV": "aws-demo",
+            "SUPPORTDOC_API_CORS_ALLOWED_ORIGINS": "https://demo.example.test, https://staging.example.test/",
+            "SUPPORTDOC_QUERY_RETRIEVAL_MODE": "fixture",
+            "SUPPORTDOC_QUERY_GENERATION_MODE": "fixture",
+        }
+    )
+
+    assert settings.deployment_target == "aws"
+    assert settings.environment == "aws-demo"
+    assert settings.api_cors_allowed_origins == (
+        "https://demo.example.test",
+        "https://staging.example.test",
+    )
+    assert settings.api_cors_allowed_origin_regex is None
+
+
 def test_healthz_returns_ok_json() -> None:
     with build_test_client() as client:
         response = client.get("/healthz")
@@ -96,6 +118,46 @@ def test_readyz_allows_local_browser_get_requests_via_cors() -> None:
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
 
 
+def test_readyz_allows_configured_non_local_browser_get_requests_via_cors() -> None:
+    settings = BackendSettings(
+        app_name="SupportDoc AWS Browser Test API",
+        environment="test",
+        api_version="9.9.9",
+        docs_url="/docs",
+        redoc_url="/redoc",
+        deployment_target="aws",
+        api_cors_allowed_origins=("https://demo.example.test",),
+        query_retrieval_mode="fixture",
+        query_generation_mode="fixture",
+    )
+
+    with build_test_client(settings=settings) as client:
+        response = client.get("/readyz", headers={"Origin": "https://demo.example.test"})
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://demo.example.test"
+
+
+def test_readyz_does_not_allow_unapproved_browser_origin_via_cors() -> None:
+    settings = BackendSettings(
+        app_name="SupportDoc AWS Browser Test API",
+        environment="test",
+        api_version="9.9.9",
+        docs_url="/docs",
+        redoc_url="/redoc",
+        deployment_target="aws",
+        api_cors_allowed_origins=("https://demo.example.test",),
+        query_retrieval_mode="fixture",
+        query_generation_mode="fixture",
+    )
+
+    with build_test_client(settings=settings) as client:
+        response = client.get("/readyz", headers={"Origin": "https://evil.example.test"})
+
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") is None
+
+
 def test_query_preflight_allows_local_browser_post_requests_via_cors() -> None:
     with build_test_client() as client:
         response = client.options(
@@ -110,6 +172,36 @@ def test_query_preflight_allows_local_browser_post_requests_via_cors() -> None:
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5173"
     assert "POST" in response.headers["access-control-allow-methods"]
+
+
+def test_backend_settings_fail_fast_when_aws_target_lacks_explicit_browser_origin_policy() -> None:
+    with pytest.raises(ValidationError, match="SUPPORTDOC_API_CORS_ALLOWED_ORIGINS"):
+        BackendSettings(
+            deployment_target="aws",
+            query_retrieval_mode="fixture",
+            query_generation_mode="fixture",
+        )
+
+
+def test_backend_settings_fail_fast_when_aws_target_uses_local_artifact_mode() -> None:
+    with pytest.raises(ValidationError, match="SUPPORTDOC_QUERY_RETRIEVAL_MODE=artifact"):
+        BackendSettings(
+            deployment_target="aws",
+            api_cors_allowed_origins=("https://demo.example.test",),
+            query_retrieval_mode="artifact",
+            query_generation_mode="fixture",
+        )
+
+
+def test_backend_settings_fail_fast_when_aws_http_generation_lacks_base_url() -> None:
+    with pytest.raises(ValidationError, match="SUPPORTDOC_QUERY_GENERATION_BASE_URL"):
+        BackendSettings(
+            deployment_target="aws",
+            api_cors_allowed_origins=("https://demo.example.test",),
+            query_retrieval_mode="fixture",
+            query_generation_mode="http",
+            query_generation_base_url=None,
+        )
 
 
 def test_query_returns_supported_answer_from_backend_orchestration() -> None:
