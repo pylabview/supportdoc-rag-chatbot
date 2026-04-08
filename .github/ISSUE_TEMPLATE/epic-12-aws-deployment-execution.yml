@@ -1,0 +1,122 @@
+name: "EPIC 12 — AWS deployment execution"
+description: "Deploy the current SupportDoc RAG Chatbot MVP to AWS using the repo’s canonical cloud path: ECS/Fargate backend, RDS PostgreSQL with pgvector, an OpenAI-compatible inference endpoint, and optional Amplify frontend hosting."
+title: "[EPIC 12] AWS deployment execution"
+labels: ['epic', 'aws', 'infra', 'deployment', 'backend', 'frontend', 'ops']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Outcome
+        Deploy the current SupportDoc RAG Chatbot MVP to AWS using the repo’s canonical cloud path so the backend can answer queries through RDS PostgreSQL + `pgvector` retrieval and `openai_compatible` generation, with an optional React SPA hosted separately.
+
+        ## In scope
+        - one AWS MVP environment for the current repo
+        - ECS Fargate backend behind an ALB
+        - RDS PostgreSQL with `pgvector`
+        - one OpenAI-compatible inference endpoint reachable by the backend
+        - ECR image publishing for the backend
+        - S3 bucket / prefix layout for artifacts and evaluation outputs
+        - CloudWatch logs and basic operator-visible health validation
+        - optional React SPA deployment on Amplify Hosting after backend readiness
+        - operator runbook notes, smoke commands, rollback / stop-cost notes
+        - one local-vs-AWS env var matrix so testing does not mix loopback and cloud hostnames
+
+        ## Out of scope
+        - architecture rewrite
+        - switching retrieval away from `pgvector`
+        - replacing ECS/Fargate with Lambda or EKS
+        - broad refactors unrelated to deployment
+        - advanced autoscaling / production hardening beyond MVP needs
+        - multi-environment platform engineering beyond one MVP deployment
+        - auth / user accounts
+        - new product features unrelated to AWS rollout
+
+        ## Acceptance criteria
+        - One AWS MVP environment is live with the backend reachable through an ALB.
+        - `GET /healthz` passes through the target group and `GET /readyz` succeeds from the public backend URL.
+        - The backend can answer one supported `POST /query` request using `pgvector` retrieval from RDS PostgreSQL.
+        - The backend can generate a valid `QueryResponse` using the configured `openai_compatible` inference endpoint.
+        - Backend logs are visible in CloudWatch.
+        - The promoted runtime dataset is loaded into PostgreSQL through the repo’s canonical promotion path.
+        - The runtime configuration is documented as env vars, SSM parameters, and Secrets Manager secrets.
+        - The optional React SPA can call the deployed backend using `VITE_SUPPORTDOC_API_BASE_URL`.
+        - The repo documents one clear env-var matrix for local testing, local cloud smoke, and AWS deployment.
+        - A short rollback / stop-cost procedure exists for the MVP environment.
+
+  - type: checkboxes
+    id: tasks
+    attributes:
+      label: Tasks (create separate Task issues for each)
+      description: Tick these as you complete each Task issue.
+      options:
+        - label: Provision AWS foundation for the MVP environment
+          required: false
+        - label: Stand up RDS PostgreSQL + pgvector and load the runtime dataset
+          required: false
+        - label: Publish the backend image and deploy the ECS Fargate service
+          required: false
+        - label: Stand up the OpenAI-compatible inference endpoint
+          required: false
+        - label: Wire the full cloud-backed runtime and run end-to-end smoke
+          required: false
+        - label: Deploy the React SPA on Amplify and complete operator handoff
+          required: false
+
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      description: GitHub handle(s) responsible for this epic (e.g., @rodrigo)
+      placeholder: "@your-handle"
+    validations:
+      required: false
+
+  - type: input
+    id: target_date
+    attributes:
+      label: Target date
+      description: Optional target completion date (YYYY-MM-DD)
+      placeholder: "2026-05-31"
+    validations:
+      required: false
+
+  - type: textarea
+    id: task_links
+    attributes:
+      label: Linked Task issues
+      description: Paste links to Task issues here as you create them.
+      placeholder: |
+        - https://github.com/<OWNER>/<REPO>/issues/201
+        - https://github.com/<OWNER>/<REPO>/issues/202
+        - https://github.com/<OWNER>/<REPO>/issues/203
+    validations:
+      required: false
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies / blockers
+      description: Anything that must happen first (other epics, external decisions, tooling, etc.).
+      placeholder: |
+        - Task 9 and Task 10 behavior is already merged in the repo ZIP used as the deployment source of truth
+        - Local Task 10 cloud smoke should pass before AWS rollout begins
+        - Existing backend routes stay stable: `GET /healthz`, `GET /readyz`, `POST /query`
+        - Existing trust contract remains the response contract: `docs/contracts/query_response.schema.json`
+        - One AWS region and one naming convention must be chosen for the MVP environment
+        - Promotion input artifacts and runtime identifiers (`schema_name`, `runtime_id`) must be agreed before RDS load
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Extra context, decisions, or links.
+      placeholder: |
+        - Keep this epic execution-focused and small; do not turn it into an architecture rewrite
+        - Recommended order: foundation -> RDS + promotion -> inference -> ECS backend -> end-to-end smoke -> Amplify frontend
+        - Backend first, frontend last
+        - Use one env-var matrix for local, local cloud smoke, and AWS so operators do not mix `127.0.0.1` with `host.docker.internal` or AWS hostnames
+        - Canonical repo anchors: `docs/architecture/aws_deployment.md`, `docs/ops/cost_and_ops.md`, `scripts/smoke-cloud-runtime.sh`, `src/supportdoc_rag_chatbot/config.py`
+    validations:
+      required: false
