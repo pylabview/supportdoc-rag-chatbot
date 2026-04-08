@@ -1,5 +1,5 @@
 name: "EPIC 12 — AWS deployment execution"
-description: "Deploy the current SupportDoc RAG Chatbot MVP to AWS using the repo’s canonical cloud path: ECS/Fargate backend, RDS PostgreSQL with pgvector, an OpenAI-compatible inference endpoint, and optional Amplify frontend hosting."
+description: "Deploy the SupportDoc RAG Chatbot MVP to AWS using ECS/Fargate, RDS PostgreSQL + pgvector, an OpenAI-compatible inference endpoint, and optional Amplify frontend hosting."
 title: "[EPIC 12] AWS deployment execution"
 labels: ['epic', 'aws', 'infra', 'deployment', 'backend', 'frontend', 'ops']
 body:
