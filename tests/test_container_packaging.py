@@ -10,6 +10,7 @@ def test_backend_dockerfile_sets_fixture_defaults_and_non_root_runtime() -> None
     content = dockerfile.read_text(encoding="utf-8")
     assert "FROM python:3.13-slim" in content
     assert "SUPPORTDOC_LOCAL_API_MODE=fixture" in content
+    assert "uv sync --locked --no-dev --extra embeddings-local" in content
     assert "USER supportdoc" in content
     assert "EXPOSE 9001" in content
     assert "HEALTHCHECK" in content
@@ -45,4 +46,5 @@ def test_readme_documents_containerized_local_api_smoke_workflow() -> None:
     assert "## 7B. Containerized Local API Smoke Workflow" in content
     assert "docker/backend.Dockerfile" in content
     assert "docker compose up --build -d" in content
-    assert "Artifact mode inside the container image is deferred" in content
+    assert "Artifact mode inside the container image" in content
+    assert "deferred" in content

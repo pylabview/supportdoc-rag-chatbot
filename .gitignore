@@ -227,3 +227,4 @@ data/processed/indexes/
 # Local retrieval evaluation outputs
 data/evaluation/runs/
 tmp/eval/
+data/processed/chunks.jsonl

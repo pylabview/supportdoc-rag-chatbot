@@ -70,7 +70,11 @@ from supportdoc_rag_chatbot.retrieval.indexes import (
     DEFAULT_FAISS_INDEX_PATH,
     DEFAULT_FAISS_METADATA_PATH,
     DEFAULT_FAISS_ROW_MAPPING_PATH,
+    DEFAULT_PGVECTOR_RUNTIME_ID,
+    DEFAULT_PGVECTOR_SCHEMA_NAME,
     build_faiss_index_artifacts,
+    promote_pgvector_runtime,
+    render_pgvector_promotion_report,
 )
 from supportdoc_rag_chatbot.retrieval.smoke import (
     DEFAULT_PREVIEW_CHARS,
@@ -162,6 +166,39 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Output path for the row-to-chunk-id mapping JSON",
     )
     index_parser.set_defaults(handler=_run_build_faiss_index)
+
+    pgvector_parser = subparsers.add_parser(
+        "promote-pgvector-runtime",
+        help="Load the current local embedding artifacts into the canonical pgvector runtime schema",
+    )
+    pgvector_parser.add_argument(
+        "--database-url",
+        required=True,
+        help="PostgreSQL connection string used for the pgvector runtime schema",
+    )
+    pgvector_parser.add_argument(
+        "--chunks",
+        type=Path,
+        default=DEFAULT_CHUNKS_PATH,
+        help="Path to chunks.jsonl used as the canonical source corpus",
+    )
+    pgvector_parser.add_argument(
+        "--embedding-metadata",
+        type=Path,
+        default=DEFAULT_METADATA_PATH,
+        help="Path to the embedding metadata JSON produced by embed-chunks",
+    )
+    pgvector_parser.add_argument(
+        "--schema-name",
+        default=DEFAULT_PGVECTOR_SCHEMA_NAME,
+        help="Target PostgreSQL schema name for the pgvector runtime tables",
+    )
+    pgvector_parser.add_argument(
+        "--runtime-id",
+        default=DEFAULT_PGVECTOR_RUNTIME_ID,
+        help="Logical runtime identifier recorded in the pgvector metadata table",
+    )
+    pgvector_parser.set_defaults(handler=_run_promote_pgvector_runtime)
 
     smoke_parser = subparsers.add_parser(
         "smoke-dense-retrieval",
@@ -719,6 +756,18 @@ def _run_build_faiss_index(args: argparse.Namespace) -> int:
         f"index={args.index_output}, metadata={args.index_metadata_output}, "
         f"row-mapping={args.row_mapping_output}"
     )
+    return 0
+
+
+def _run_promote_pgvector_runtime(args: argparse.Namespace) -> int:
+    report = promote_pgvector_runtime(
+        dsn=args.database_url,
+        chunks_path=args.chunks,
+        embedding_metadata_path=args.embedding_metadata,
+        schema_name=args.schema_name,
+        runtime_id=args.runtime_id,
+    )
+    print(render_pgvector_promotion_report(report))
     return 0
 
 

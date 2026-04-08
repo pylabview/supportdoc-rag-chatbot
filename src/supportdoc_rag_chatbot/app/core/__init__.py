@@ -23,6 +23,7 @@ from .query_service import (
 from .retrieval import (
     ArtifactDenseQueryRetriever,
     FixtureQueryRetriever,
+    PgvectorQueryRetriever,
     QueryRetriever,
     RetrievalBackendMode,
     RetrievedEvidenceBundle,
@@ -34,6 +35,7 @@ __all__ = [
     "ArtifactDenseQueryRetriever",
     "DEFAULT_QUERY_MAX_GENERATION_ATTEMPTS",
     "FixtureQueryRetriever",
+    "PgvectorQueryRetriever",
     "LocalApiPreflightReport",
     "LocalWorkflowError",
     "PreflightCheck",

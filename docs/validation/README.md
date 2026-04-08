@@ -7,6 +7,7 @@ Use it when you want to answer these questions quickly:
 - what is the canonical local API smoke path?
 - what is the canonical artifact-mode smoke path?
 - what is the canonical packaged container runtime smoke path?
+- what is the canonical cloud-backed runtime smoke path?
 - where is the reviewed evidence package for the MVP trust pass?
 
 The current validated scope is intentionally **backend / API first**:
@@ -14,6 +15,7 @@ The current validated scope is intentionally **backend / API first**:
 - fixture-mode local API smoke is supported,
 - artifact-mode local API smoke is supported,
 - backend container runtime smoke is supported in fixture mode,
+- cloud-backed runtime smoke is supported for `pgvector` retrieval plus OpenAI-compatible inference when those dependencies are available,
 - reviewed evidence correctness artifacts are committed,
 - thin local browser scaffold now exists under `frontend/`,
 - artifact-mode inside the container image remains deferred.
@@ -51,6 +53,21 @@ Run the packaged backend runtime smoke path:
 ```
 
 This path builds the checked-in backend image, starts it with `docker run`, waits for health, validates `/healthz`, `/readyz`, and supported + refusal `/query` responses, then cleans up.
+
+Docs: `README.md` section `7B. Containerized Local API Smoke Workflow`
+
+### Cloud-backed runtime smoke
+
+Run the packaged cloud-backed runtime smoke path when PostgreSQL + `pgvector` and an OpenAI-compatible inference endpoint are available:
+
+```bash
+./scripts/smoke-cloud-runtime.sh \
+  --database-url postgresql://... \
+  --generation-base-url http://127.0.0.1:8080 \
+  --generation-model demo-model
+```
+
+This path can optionally promote the current local artifact outputs into PostgreSQL, then boots the same backend image in `pgvector` + `openai_compatible` mode and validates `/healthz`, `/readyz`, and one supported `/query` response against the canonical `QueryResponse` contract.
 
 Docs: `README.md` section `7B. Containerized Local API Smoke Workflow`
 

@@ -12,7 +12,7 @@ GENERATION_MODE="${SUPPORTDOC_QUERY_GENERATION_MODE:-fixture}"
 
 usage() {
   cat <<EOF
-Usage: ./scripts/run-api-local.sh [--mode fixture|artifact] [--host 127.0.0.1] [--port 9001] [--reload]
+Usage: ./scripts/run-api-local.sh [--mode fixture|artifact|pgvector] [--host 127.0.0.1] [--port 9001] [--reload]
 
 Defaults:
   mode   fixture
@@ -23,6 +23,9 @@ Examples:
   ./scripts/run-api-local.sh
   ./scripts/run-api-local.sh --mode artifact
   SUPPORTDOC_LOCAL_API_MODE=artifact ./scripts/run-api-local.sh
+  SUPPORTDOC_LOCAL_API_MODE=pgvector SUPPORTDOC_QUERY_PGVECTOR_DSN=postgresql://... \
+    SUPPORTDOC_QUERY_GENERATION_MODE=openai_compatible SUPPORTDOC_QUERY_GENERATION_BASE_URL=http://127.0.0.1:8080 \
+    SUPPORTDOC_QUERY_GENERATION_MODEL=demo-model ./scripts/run-api-local.sh
 EOF
 }
 

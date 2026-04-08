@@ -6,6 +6,8 @@ from math import isfinite
 from pathlib import Path
 from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
 
+import psycopg
+
 from supportdoc_rag_chatbot.app.services import RetrievedChunkCitationContext, RetrievedContextChunk
 from supportdoc_rag_chatbot.app.services.policy_types import RetrievalScoreNormalization
 from supportdoc_rag_chatbot.evaluation import RetrievalHit
@@ -18,7 +20,11 @@ from supportdoc_rag_chatbot.retrieval.indexes import (
     DEFAULT_FAISS_INDEX_PATH,
     DEFAULT_FAISS_METADATA_PATH,
     DEFAULT_FAISS_ROW_MAPPING_PATH,
+    DEFAULT_PGVECTOR_DISTANCE_METRIC,
+    DEFAULT_PGVECTOR_RUNTIME_ID,
+    DEFAULT_PGVECTOR_SCHEMA_NAME,
     FaissDenseIndexBackend,
+    PgvectorDenseIndexBackend,
     load_faiss_index_backend,
     read_index_metadata,
 )
@@ -36,6 +42,7 @@ class RetrievalBackendMode(StrEnum):
 
     FIXTURE = "fixture"
     ARTIFACT = "artifact"
+    PGVECTOR = "pgvector"
 
 
 _DEFAULT_ARTIFACT_EMBEDDER_MODE = "local"
@@ -530,6 +537,173 @@ class ArtifactDenseQueryRetriever:
         return self._resolved_embedder
 
 
+@dataclass(slots=True)
+class PgvectorQueryRetriever:
+    """PostgreSQL + pgvector retrieval adapter for the cloud-backed backend path."""
+
+    dsn: str
+    schema_name: str = DEFAULT_PGVECTOR_SCHEMA_NAME
+    runtime_id: str = DEFAULT_PGVECTOR_RUNTIME_ID
+    model_name: str | None = None
+    device: str = DEFAULT_DEVICE
+    batch_size: int = DEFAULT_BATCH_SIZE
+    embedder_mode: str = _DEFAULT_ARTIFACT_EMBEDDER_MODE
+    embedder_fixture_path: Path | None = None
+    name: str = "pgvector-retriever"
+    retriever_type: str = "pgvector"
+    embedder: DenseEmbedder | None = None
+    backend: PgvectorDenseIndexBackend | None = None
+    _resolved_backend: PgvectorDenseIndexBackend | None = field(
+        default=None, init=False, repr=False
+    )
+    _resolved_embedder: DenseEmbedder | None = field(default=None, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self.dsn = _validate_required_string(self.dsn, field_name="dsn")
+        self.schema_name = self.schema_name.strip() or DEFAULT_PGVECTOR_SCHEMA_NAME
+        self.runtime_id = _validate_required_string(self.runtime_id, field_name="runtime_id")
+        self.embedder_fixture_path = (
+            Path(self.embedder_fixture_path) if self.embedder_fixture_path is not None else None
+        )
+        self.embedder_mode = _normalize_artifact_embedder_mode(self.embedder_mode)
+
+    @property
+    def backend_mode(self) -> RetrievalBackendMode:
+        return RetrievalBackendMode.PGVECTOR
+
+    @property
+    def config(self) -> dict[str, Any]:
+        resolved_backend = self._resolved_backend
+        runtime_metadata = (
+            resolved_backend.runtime_metadata if resolved_backend is not None else None
+        )
+        return {
+            "dsn_configured": True,
+            "schema_name": self.schema_name,
+            "runtime_id": self.runtime_id,
+            "model_name": (
+                self.model_name
+                or (runtime_metadata.embedding_model_name if runtime_metadata is not None else None)
+            ),
+            "device": self.device,
+            "batch_size": self.batch_size,
+            "embedder_mode": self.embedder_mode,
+            "embedder_fixture_path": (
+                str(self.embedder_fixture_path) if self.embedder_fixture_path else None
+            ),
+            "distance_metric": (
+                runtime_metadata.distance_metric
+                if runtime_metadata is not None
+                else DEFAULT_PGVECTOR_DISTANCE_METRIC
+            ),
+            "score_normalization": RetrievalScoreNormalization.UNIT_INTERVAL.value,
+        }
+
+    def retrieve(self, question: str, *, top_k: int) -> RetrievedEvidenceBundle:
+        if top_k <= 0:
+            raise ValueError("top_k must be > 0")
+        normalized_question = _validate_required_string(question, field_name="question")
+        backend = self._ensure_backend_loaded()
+        embedder = self._ensure_embedder_loaded(backend)
+        vectors = embedder.embed_texts([normalized_question])
+        if len(vectors) != 1:
+            raise QueryPipelineRuntimeError(
+                "pgvector retrieval backend did not produce exactly one query embedding."
+            )
+
+        try:
+            matches = backend.search(vectors[0], top_k=top_k)
+        except ValueError as exc:
+            raise QueryPipelineConfigurationError(f"pgvector retrieval is invalid: {exc}") from exc
+        except psycopg.Error as exc:
+            raise QueryPipelineRuntimeError(
+                f"pgvector retrieval backend query failed: {exc}"
+            ) from exc
+        except OSError as exc:
+            raise QueryPipelineRuntimeError(
+                f"pgvector retrieval backend query failed: {exc}"
+            ) from exc
+
+        chunks: list[RetrievedEvidenceChunk] = []
+        for rank, match in enumerate(matches, start=1):
+            chunks.append(
+                RetrievedEvidenceChunk.from_chunk_record(
+                    match.chunk,
+                    score=_normalize_cosine_similarity(match.raw_score),
+                    rank=rank,
+                    metadata={"raw_score": float(match.raw_score)},
+                )
+            )
+
+        return RetrievedEvidenceBundle(
+            chunks=tuple(chunks),
+            retriever_name=self.name,
+            retriever_type=self.retriever_type,
+            config=self.config,
+        )
+
+    def _ensure_backend_loaded(self) -> PgvectorDenseIndexBackend:
+        if self._resolved_backend is not None:
+            return self._resolved_backend
+        if self.backend is not None:
+            self._resolved_backend = self.backend
+            return self._resolved_backend
+        try:
+            self._resolved_backend = PgvectorDenseIndexBackend(
+                dsn=self.dsn,
+                schema_name=self.schema_name,
+                runtime_id=self.runtime_id,
+            )
+            _ = self._resolved_backend.runtime_metadata
+        except ValueError as exc:
+            raise QueryPipelineConfigurationError(
+                f"pgvector retrieval metadata is invalid: {exc}"
+            ) from exc
+        except psycopg.Error as exc:
+            raise QueryPipelineRuntimeError(
+                f"pgvector retrieval backend could not be loaded: {exc}"
+            ) from exc
+        except OSError as exc:
+            raise QueryPipelineRuntimeError(
+                f"pgvector retrieval backend could not be loaded: {exc}"
+            ) from exc
+        return self._resolved_backend
+
+    def _ensure_embedder_loaded(self, backend: PgvectorDenseIndexBackend) -> DenseEmbedder:
+        if self._resolved_embedder is not None:
+            return self._resolved_embedder
+        if self.embedder is not None:
+            self._resolved_embedder = self.embedder
+            return self._resolved_embedder
+
+        if self.embedder_mode == "fixture":
+            if self.embedder_fixture_path is None:
+                raise QueryPipelineConfigurationError(
+                    "pgvector retrieval fixture embedder mode requires an embedder fixture path."
+                )
+            try:
+                self._resolved_embedder = load_fixture_embedder(Path(self.embedder_fixture_path))
+            except FileNotFoundError as exc:
+                raise QueryPipelineConfigurationError(str(exc)) from exc
+            except ValueError as exc:
+                raise QueryPipelineConfigurationError(
+                    f"pgvector retrieval fixture embedder is invalid: {exc}"
+                ) from exc
+            return self._resolved_embedder
+
+        try:
+            self._resolved_embedder = create_local_embedder(
+                model_name=(self.model_name or backend.runtime_metadata.embedding_model_name),
+                device=self.device,
+                batch_size=self.batch_size,
+            )
+        except RuntimeError as exc:
+            raise QueryPipelineRuntimeError(
+                f"pgvector retrieval embedder could not be created: {exc}"
+            ) from exc
+        return self._resolved_embedder
+
+
 def create_query_retriever(
     *,
     mode: RetrievalBackendMode | str,
@@ -540,12 +714,15 @@ def create_query_retriever(
     resolved_mode = RetrievalBackendMode(mode)
     if resolved_mode is RetrievalBackendMode.FIXTURE:
         return FixtureQueryRetriever(**kwargs)
-    return ArtifactDenseQueryRetriever(**kwargs)
+    if resolved_mode is RetrievalBackendMode.ARTIFACT:
+        return ArtifactDenseQueryRetriever(**kwargs)
+    return PgvectorQueryRetriever(**kwargs)
 
 
 __all__ = [
     "ArtifactDenseQueryRetriever",
     "FixtureQueryRetriever",
+    "PgvectorQueryRetriever",
     "QueryRetriever",
     "RetrievalBackendMode",
     "RetrievedEvidenceBundle",

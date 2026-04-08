@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import Request
 
@@ -24,11 +24,13 @@ from supportdoc_rag_chatbot.app.services import (
     load_retrieval_sufficiency_thresholds,
     validate_query_response_citations,
 )
-from supportdoc_rag_chatbot.config import BackendSettings, get_request_settings
 from supportdoc_rag_chatbot.logging_conf import log_event
 
+if TYPE_CHECKING:
+    from supportdoc_rag_chatbot.config import BackendSettings
+
 from .errors import QueryPipelineConfigurationError, QueryPipelineRuntimeError
-from .retrieval import QueryRetriever, create_query_retriever
+from .retrieval import QueryRetriever, RetrievalBackendMode, create_query_retriever
 
 DEFAULT_QUERY_MAX_GENERATION_ATTEMPTS = 2
 
@@ -285,10 +287,7 @@ def create_query_orchestrator(*, settings: BackendSettings) -> QueryOrchestrator
     """Create the canonical backend query orchestrator from backend settings."""
 
     retriever_kwargs: dict[str, Any] = {}
-    if (
-        settings.query_retrieval_mode is not None
-        and settings.query_retrieval_mode.value == "artifact"
-    ):
+    if settings.query_retrieval_mode is RetrievalBackendMode.ARTIFACT:
         retriever_kwargs = {
             "chunks_path": _optional_path(settings.query_artifact_chunks_path),
             "index_path": _optional_path(settings.query_artifact_index_path),
@@ -296,6 +295,14 @@ def create_query_orchestrator(*, settings: BackendSettings) -> QueryOrchestrator
             "row_mapping_path": _optional_path(settings.query_artifact_row_mapping_path),
             "embedder_mode": settings.query_artifact_embedder_mode,
             "embedder_fixture_path": _optional_path(settings.query_artifact_embedder_fixture_path),
+        }
+    elif settings.query_retrieval_mode is RetrievalBackendMode.PGVECTOR:
+        retriever_kwargs = {
+            "dsn": settings.query_pgvector_dsn,
+            "schema_name": settings.query_pgvector_schema_name,
+            "runtime_id": settings.query_pgvector_runtime_id,
+            "embedder_mode": settings.query_pgvector_embedder_mode,
+            "embedder_fixture_path": _optional_path(settings.query_pgvector_embedder_fixture_path),
         }
 
     try:
@@ -309,6 +316,8 @@ def create_query_orchestrator(*, settings: BackendSettings) -> QueryOrchestrator
         generation_client = create_generation_client(
             mode=settings.query_generation_mode,
             base_url=settings.query_generation_base_url,
+            model=settings.query_generation_model,
+            api_key=settings.query_generation_api_key,
             timeout_seconds=settings.query_generation_timeout_seconds,
         )
     except ValueError as exc:
@@ -325,6 +334,8 @@ def create_query_orchestrator(*, settings: BackendSettings) -> QueryOrchestrator
 
 def get_request_query_orchestrator(request: Request) -> QueryOrchestrator:
     """Resolve and cache the request-scoped query orchestrator on app state."""
+
+    from supportdoc_rag_chatbot.config import get_request_settings
 
     cached = getattr(request.app.state, "query_orchestrator", None)
     if isinstance(cached, QueryOrchestrator):

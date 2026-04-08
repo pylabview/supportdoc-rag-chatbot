@@ -17,6 +17,11 @@ from supportdoc_rag_chatbot.app.client import (
     GenerationBackendMode,
 )
 from supportdoc_rag_chatbot.app.core.retrieval import RetrievalBackendMode
+from supportdoc_rag_chatbot.retrieval.indexes import (
+    DEFAULT_PGVECTOR_RUNTIME_ID,
+    DEFAULT_PGVECTOR_SCHEMA_NAME,
+    validate_pgvector_schema_name,
+)
 
 DEFAULT_API_TITLE = "SupportDoc RAG Chatbot API"
 DEFAULT_API_ENVIRONMENT = "local"
@@ -26,6 +31,7 @@ DEFAULT_QUERY_RETRIEVAL_MODE = RetrievalBackendMode.FIXTURE
 DEFAULT_QUERY_GENERATION_MODE = GenerationBackendMode.FIXTURE
 DEFAULT_QUERY_TOP_K = 3
 DEFAULT_QUERY_ARTIFACT_EMBEDDER_MODE: Literal["local", "fixture"] = "local"
+DEFAULT_QUERY_PGVECTOR_EMBEDDER_MODE: Literal["local", "fixture"] = "local"
 DEFAULT_API_CORS_ALLOWED_ORIGINS: tuple[str, ...] = ()
 DEFAULT_API_CORS_ALLOWED_ORIGIN_REGEX: str | None = None
 
@@ -56,6 +62,8 @@ class BackendSettings(BaseModel):
     query_retrieval_mode: RetrievalBackendMode = Field(default=DEFAULT_QUERY_RETRIEVAL_MODE)
     query_generation_mode: GenerationBackendMode = Field(default=DEFAULT_QUERY_GENERATION_MODE)
     query_generation_base_url: str | None = None
+    query_generation_model: str | None = None
+    query_generation_api_key: str | None = Field(default=None, repr=False)
     query_generation_timeout_seconds: float = Field(default=DEFAULT_GENERATION_TIMEOUT_SECONDS)
     query_top_k: int = Field(default=DEFAULT_QUERY_TOP_K)
     query_artifact_chunks_path: str | None = None
@@ -66,6 +74,13 @@ class BackendSettings(BaseModel):
         default=DEFAULT_QUERY_ARTIFACT_EMBEDDER_MODE
     )
     query_artifact_embedder_fixture_path: str | None = None
+    query_pgvector_dsn: str | None = Field(default=None, repr=False)
+    query_pgvector_schema_name: str = Field(default=DEFAULT_PGVECTOR_SCHEMA_NAME)
+    query_pgvector_runtime_id: str = Field(default=DEFAULT_PGVECTOR_RUNTIME_ID)
+    query_pgvector_embedder_mode: Literal["local", "fixture"] = Field(
+        default=DEFAULT_QUERY_PGVECTOR_EMBEDDER_MODE
+    )
+    query_pgvector_embedder_fixture_path: str | None = None
 
     @field_validator(
         "app_name",
@@ -73,6 +88,8 @@ class BackendSettings(BaseModel):
         "api_version",
         "docs_url",
         "redoc_url",
+        "query_pgvector_runtime_id",
+        "query_pgvector_schema_name",
     )
     @classmethod
     def _validate_non_blank(cls, value: str, info) -> str:
@@ -83,11 +100,15 @@ class BackendSettings(BaseModel):
 
     @field_validator(
         "query_generation_base_url",
+        "query_generation_model",
+        "query_generation_api_key",
         "query_artifact_chunks_path",
         "query_artifact_index_path",
         "query_artifact_index_metadata_path",
         "query_artifact_row_mapping_path",
         "query_artifact_embedder_fixture_path",
+        "query_pgvector_dsn",
+        "query_pgvector_embedder_fixture_path",
     )
     @classmethod
     def _validate_optional_string(cls, value: str | None) -> str | None:
@@ -132,13 +153,18 @@ class BackendSettings(BaseModel):
             ) from exc
         return normalized
 
-    @field_validator("query_artifact_embedder_mode")
+    @field_validator("query_artifact_embedder_mode", "query_pgvector_embedder_mode")
     @classmethod
-    def _validate_artifact_embedder_mode(cls, value: str) -> str:
+    def _validate_embedder_mode(cls, value: str, info) -> str:
         normalized = value.strip().casefold()
         if normalized not in {"local", "fixture"}:
-            raise ValueError("query_artifact_embedder_mode must be 'local' or 'fixture'")
+            raise ValueError(f"{info.field_name} must be 'local' or 'fixture'")
         return normalized
+
+    @field_validator("query_pgvector_schema_name")
+    @classmethod
+    def _validate_pgvector_schema_name(cls, value: str) -> str:
+        return validate_pgvector_schema_name(value)
 
     @field_validator("query_generation_timeout_seconds")
     @classmethod
@@ -157,6 +183,37 @@ class BackendSettings(BaseModel):
         return normalized
 
     @model_validator(mode="after")
+    def _validate_runtime_dependencies(self) -> "BackendSettings":
+        if self.query_retrieval_mode is RetrievalBackendMode.PGVECTOR:
+            if not self.query_pgvector_dsn:
+                raise ValueError(
+                    "SUPPORTDOC_QUERY_PGVECTOR_DSN is required when "
+                    "SUPPORTDOC_QUERY_RETRIEVAL_MODE=pgvector."
+                )
+            if (
+                self.query_pgvector_embedder_mode == "fixture"
+                and not self.query_pgvector_embedder_fixture_path
+            ):
+                raise ValueError(
+                    "SUPPORTDOC_QUERY_PGVECTOR_EMBEDDER_FIXTURE_PATH is required when "
+                    "SUPPORTDOC_QUERY_PGVECTOR_EMBEDDER_MODE=fixture."
+                )
+
+        if self.query_generation_mode is GenerationBackendMode.OPENAI_COMPATIBLE:
+            if not self.query_generation_base_url:
+                raise ValueError(
+                    "SUPPORTDOC_QUERY_GENERATION_BASE_URL is required when "
+                    "SUPPORTDOC_QUERY_GENERATION_MODE=openai_compatible."
+                )
+            if not self.query_generation_model:
+                raise ValueError(
+                    "SUPPORTDOC_QUERY_GENERATION_MODEL is required when "
+                    "SUPPORTDOC_QUERY_GENERATION_MODE=openai_compatible."
+                )
+
+        return self
+
+    @model_validator(mode="after")
     def _validate_deployment_target_runtime(self) -> "BackendSettings":
         if self.deployment_target is not DeploymentTarget.AWS:
             return self
@@ -166,7 +223,8 @@ class BackendSettings(BaseModel):
                 "SUPPORTDOC_DEPLOYMENT_TARGET=aws does not support "
                 "SUPPORTDOC_QUERY_RETRIEVAL_MODE=artifact in the current repo. "
                 "Artifact retrieval is the local FAISS path only. Use "
-                "SUPPORTDOC_QUERY_RETRIEVAL_MODE=fixture for the deploy-now AWS backend shell."
+                "SUPPORTDOC_QUERY_RETRIEVAL_MODE=fixture or "
+                "SUPPORTDOC_QUERY_RETRIEVAL_MODE=pgvector for the AWS backend path."
             )
 
         if not self.api_cors_allowed_origins and not self.api_cors_allowed_origin_regex:
@@ -248,6 +306,14 @@ def load_backend_settings(environ: Mapping[str, str] | None = None) -> BackendSe
             source,
             "SUPPORTDOC_QUERY_GENERATION_BASE_URL",
         ),
+        query_generation_model=_read_env_optional_string(
+            source,
+            "SUPPORTDOC_QUERY_GENERATION_MODEL",
+        ),
+        query_generation_api_key=_read_env_optional_string(
+            source,
+            "SUPPORTDOC_QUERY_GENERATION_API_KEY",
+        ),
         query_generation_timeout_seconds=_read_env_float(
             source,
             "SUPPORTDOC_QUERY_GENERATION_TIMEOUT_SECONDS",
@@ -282,6 +348,29 @@ def load_backend_settings(environ: Mapping[str, str] | None = None) -> BackendSe
         query_artifact_embedder_fixture_path=_read_env_optional_string(
             source,
             "SUPPORTDOC_QUERY_ARTIFACT_EMBEDDER_FIXTURE_PATH",
+        ),
+        query_pgvector_dsn=_read_env_optional_string(
+            source,
+            "SUPPORTDOC_QUERY_PGVECTOR_DSN",
+        ),
+        query_pgvector_schema_name=_read_env_string(
+            source,
+            "SUPPORTDOC_QUERY_PGVECTOR_SCHEMA_NAME",
+            default=DEFAULT_PGVECTOR_SCHEMA_NAME,
+        ),
+        query_pgvector_runtime_id=_read_env_string(
+            source,
+            "SUPPORTDOC_QUERY_PGVECTOR_RUNTIME_ID",
+            default=DEFAULT_PGVECTOR_RUNTIME_ID,
+        ),
+        query_pgvector_embedder_mode=_read_env_string(
+            source,
+            "SUPPORTDOC_QUERY_PGVECTOR_EMBEDDER_MODE",
+            default=DEFAULT_QUERY_PGVECTOR_EMBEDDER_MODE,
+        ),
+        query_pgvector_embedder_fixture_path=_read_env_optional_string(
+            source,
+            "SUPPORTDOC_QUERY_PGVECTOR_EMBEDDER_FIXTURE_PATH",
         ),
     )
 
@@ -377,6 +466,7 @@ __all__ = [
     "DEFAULT_DEPLOYMENT_TARGET",
     "DEFAULT_QUERY_ARTIFACT_EMBEDDER_MODE",
     "DEFAULT_QUERY_GENERATION_MODE",
+    "DEFAULT_QUERY_PGVECTOR_EMBEDDER_MODE",
     "DEFAULT_QUERY_RETRIEVAL_MODE",
     "DEFAULT_QUERY_TOP_K",
     "DeploymentTarget",
