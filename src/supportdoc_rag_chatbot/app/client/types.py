@@ -13,6 +13,7 @@ class GenerationBackendMode(StrEnum):
 
     FIXTURE = "fixture"
     HTTP = "http"
+    OPENAI_COMPATIBLE = "openai_compatible"
 
 
 class GenerationFailureCode(StrEnum):

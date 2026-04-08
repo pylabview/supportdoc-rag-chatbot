@@ -48,5 +48,6 @@ def test_readme_documents_canonical_container_runtime_smoke_command() -> None:
     assert "./scripts/smoke-container-runtime.sh" in content
     assert "CI build smoke proves" in content
     assert "docker run" in content
-    assert "fixture-mode only" in content
+    assert "cloud-backed `pgvector` + OpenAI-compatible path" in content
+    assert "./scripts/smoke-cloud-runtime.sh" in content
     assert "`docker compose` remains optional" in content

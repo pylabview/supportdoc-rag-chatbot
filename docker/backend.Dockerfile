@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir "uv==0.10.9"
 
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
-RUN uv sync --locked --no-dev
+RUN uv sync --locked --no-dev --extra embeddings-local
 
 COPY docs/contracts ./docs/contracts
 COPY scripts ./scripts

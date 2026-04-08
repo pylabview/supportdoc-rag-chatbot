@@ -487,9 +487,10 @@ docker build -f docker/backend.Dockerfile -t supportdoc-rag-chatbot-api:local .
 
 The image:
 
-- installs the locked runtime dependencies with `uv sync --locked --no-dev`,
+- installs the locked runtime dependencies with `uv sync --locked --no-dev --extra embeddings-local`,
 - defaults to `SUPPORTDOC_LOCAL_API_MODE=fixture`,
 - starts the existing local API shell on `0.0.0.0:9001`,
+- can boot either the checked-in fixture path or the cloud-backed `pgvector` + OpenAI-compatible path through environment variables,
 - exposes port `9001`,
 - defines a `/healthz` container healthcheck, and
 - runs as the non-root `supportdoc` user.
@@ -502,7 +503,20 @@ The CI build smoke proves that `docker/backend.Dockerfile` still builds. The run
 ./scripts/smoke-container-runtime.sh
 ```
 
-The runtime smoke always removes the container on exit and prints container logs plus `docker inspect` state/port details when a check fails. It stays intentionally fixture-mode only and does not reopen artifact-mode-in-container scope.
+The runtime smoke always removes the container on exit and prints container logs plus `docker inspect` state/port details when a check fails. The checked-in fixture smoke stays the boring, reliable first packaged-runtime proof. The same image can also boot the cloud-backed `pgvector` + OpenAI-compatible path when those dependencies are available.
+
+### Cloud-backed runtime smoke
+
+Use the cloud-backed smoke path when you already have a PostgreSQL + `pgvector` instance plus an OpenAI-compatible inference endpoint available locally or in a reachable dev environment. The script can optionally promote the current local embedding artifacts into PostgreSQL before it boots the backend image in cloud mode.
+
+```bash
+./scripts/smoke-cloud-runtime.sh \
+  --database-url postgresql://... \
+  --generation-base-url http://127.0.0.1:8080 \
+  --generation-model demo-model
+```
+
+That path keeps the browser/API contract unchanged while proving the backend image can run with `SUPPORTDOC_QUERY_RETRIEVAL_MODE=pgvector` and `SUPPORTDOC_QUERY_GENERATION_MODE=openai_compatible`.
 
 ### Run the backend container directly
 
@@ -557,11 +571,12 @@ docker run --rm -p 9001:9001 \
 
 ### Artifact mode status
 
-Artifact mode inside the container image is deferred for this first packaging pass. The checked-in image and compose service are fixture-mode only on purpose:
+Artifact mode inside the container image is still deferred. The current container work closes the AWS-targeted cloud path, not the local-FAISS-in-container path:
 
-- the image installs the baseline API runtime needed for fixture-mode smoke testing,
-- the compose workflow does not yet define a canonical mount contract for local FAISS artifacts, and
-- the container smoke path is meant to validate bootability, `/healthz`, `/readyz`, and the stable `/query` response contract before production-style deployment work begins.
+- the image now includes the runtime needed for fixture mode plus cloud-backed `pgvector` retrieval with local query embedding,
+- `./scripts/smoke-container-runtime.sh` remains the canonical fixture-first packaged smoke path,
+- `./scripts/smoke-cloud-runtime.sh` is the cloud-backed packaged smoke path for `pgvector` + OpenAI-compatible inference, and
+- the compose workflow is still intentionally fixture-first instead of defining a mount contract for local FAISS artifacts.
 
 If artifact-mode container support is needed later, it should be added as an explicit follow-on task with a documented artifact mount/input contract rather than inferred ad hoc.
 
@@ -664,7 +679,7 @@ The single closeout status page for Epic 10 now lives at `docs/validation/mvp_re
 
 The intended long-term deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The **current validated MVP scope in this repo is still backend-first**, but it now includes the checked-in local browser demo scaffold and one browser-safe public config seam: `VITE_SUPPORTDOC_API_BASE_URL`.
 
-The deploy-now AWS slice is the backend shell on ECS/ALB in fixture mode. The first browser-backed AWS slice uses the same backend contract plus separately hosted frontend wiring through `VITE_SUPPORTDOC_API_BASE_URL` and explicit backend CORS origin settings. Cloud retrieval (`pgvector`) and production inference integration remain deferred until their adapters exist in code.
+The deploy-now AWS slice is still the backend shell on ECS/ALB in fixture mode. The same repo now also includes the first cloud-backed runtime path: `pgvector` retrieval, a promotion/load CLI for PostgreSQL, an OpenAI-compatible inference adapter that can target vLLM or TGI-style chat completion endpoints, and a packaged cloud runtime smoke path. The first browser-backed AWS slice still uses the same backend contract plus separately hosted frontend wiring through `VITE_SUPPORTDOC_API_BASE_URL` and explicit backend CORS origin settings.
 
 The canonical AWS deployment baseline for that path now lives in `docs/architecture/aws_deployment.md`, with the rendered diagram in `docs/diagrams/aws_deployment.md` and the versioned Mermaid source in `docs/diagrams/aws_deployment.mmd`.
 
@@ -677,7 +692,7 @@ For copy-ready report wording on the baseline no-fine-tuning answer, the snapsho
 - `docs/process/git_workflow.md` — branch / PR / lockfile workflow
 - `docs/data/corpus.md` — corpus scope and licensing notes
 - `docs/diagrams/ingestion_pipeline.md` — ingestion pipeline overview
-- `docs/validation/README.md` — validation entry point for fixture smoke, artifact smoke, container runtime smoke, and reviewed trust artifacts
+- `docs/validation/README.md` — validation entry point for fixture smoke, artifact smoke, container runtime smoke, cloud runtime smoke, and reviewed trust artifacts
 - `docs/architecture/aws_deployment.md` — canonical AWS deployment baseline, deploy-now scope, and deferred options
 - `docs/diagrams/aws_deployment.md` — AWS deployment diagram
 - `docs/adr/` — architecture decisions and project rationale
