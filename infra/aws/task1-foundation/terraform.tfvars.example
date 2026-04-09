@@ -1,0 +1,19 @@
+aws_region            = "us-east-1"
+project               = "supportdoc-rag-chatbot"
+environment           = "mvp"
+root_domain_name      = "example.com"
+backend_api_subdomain = "api.supportdoc-mvp"
+
+# Keep the repo-aligned runtime defaults unless later tasks intentionally change them.
+inference_model_id     = "mistralai/Mistral-7B-Instruct-v0.3"
+pgvector_schema_name   = "supportdoc_rag"
+pgvector_runtime_id    = "default"
+pgvector_embedder_mode = "local"
+
+public_subnet_cidrs       = ["10.42.0.0/24", "10.42.1.0/24"]
+app_private_subnet_cidrs  = ["10.42.10.0/24", "10.42.11.0/24"]
+data_private_subnet_cidrs = ["10.42.20.0/24", "10.42.21.0/24"]
+
+tags = {
+  Owner = "supportdoc"
+}
