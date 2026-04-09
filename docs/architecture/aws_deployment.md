@@ -11,6 +11,8 @@ The baseline is intentionally opinionated so later infra work can build against 
 
 Companion cost and operations notes for the same baseline live in `docs/ops/cost_and_ops.md`.
 
+The concrete EPIC 12 / Task 1 implementation now lives under `infra/aws/task1-foundation/`, with the repo-aligned operator contract documented in `docs/ops/aws_task1_foundation.md`.
+
 The runtime / trust validation entry point for this same API-first MVP lives in `docs/validation/README.md`.
 
 Report-facing UI wording and the later browser-to-AWS handoff notes live in `docs/validation/report_and_aws_handoff_notes.md`.

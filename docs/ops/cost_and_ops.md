@@ -12,6 +12,8 @@ These notes are intentionally directional rather than price-quote accurate. They
 
 This note matches the current baseline defined in `docs/architecture/aws_deployment.md`:
 
+The concrete Task 1 implementation and its exact env/secret naming contract live in `infra/aws/task1-foundation/` and `docs/ops/aws_task1_foundation.md`.
+
 - **API hosting:** ECS Fargate behind an ALB
 - **Inference hosting:** one private EC2 GPU instance
 - **Vector store / retrieval backend:** RDS PostgreSQL with `pgvector`
@@ -20,7 +22,7 @@ This note matches the current baseline defined in `docs/architecture/aws_deploym
 - **Secrets / config:** Secrets Manager plus SSM Parameter Store
 - **Browser hosting:** Amplify Hosting for the checked-in SPA when the separate browser-hosting slice is enabled
 
-The working assumption for planning is one U.S. commercial AWS region, using **`us-west-2` as the default placeholder region** until the final deployment region is explicitly chosen.
+The working assumption for planning is one U.S. commercial AWS region, now pinned to **`us-east-1` for the MVP foundation** so the networking, HTTPS edge, and runtime config naming stay consistent across later tasks.
 
 ## Operating modes
 
