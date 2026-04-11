@@ -23,6 +23,11 @@ output "backend_base_url" {
   value       = "https://${local.backend_api_domain}"
 }
 
+output "public_route53_zone_id" {
+  description = "Public Route 53 hosted zone ID used for ACM validation and ALB alias records."
+  value       = local.public_route53_zone_id
+}
+
 output "vpc_id" {
   description = "Shared MVP VPC identifier."
   value       = aws_vpc.this.id

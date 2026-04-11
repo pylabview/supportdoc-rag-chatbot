@@ -2,9 +2,16 @@
 
 This Terraform stack implements the **Task 1** baseline for the SupportDoc RAG Chatbot MVP using the actual runtime contract present in the repo.
 
+Task 1.1 adds the deploy-control-plane overlay around the same stack:
+
+- a partial S3 backend with native lockfile locking
+- exact hosted-zone targeting through an optional `route53_zone_id` input
+- bootstrap IAM policy JSONs for the one-time AWS setup you will do manually
+- a GitHub Actions workflow for PR `plan` and `main` `apply` via OIDC
+
 ## What it creates
 
-- one target region: `us-east-1` by default
+- one target region: `us-west-2` by default
 - one environment name: `mvp` by default
 - one shared naming convention based on `supportdoc-rag-chatbot-mvp`
 - one VPC with:
@@ -41,31 +48,67 @@ This Terraform stack implements the **Task 1** baseline for the SupportDoc RAG C
 
 These defaults are baked into this stack to keep the MVP path opinionated and fast:
 
-- **region:** `us-east-1`
+- **region:** `us-west-2`
 - **environment:** `mvp`
-- **backend API subdomain pattern:** `api.supportdoc-mvp.<root_domain_name>`
+- **backend API hostname pattern:** `api.<root_domain_name>`
 - **pgvector schema name:** `supportdoc_rag`
 - **pgvector runtime id:** `default`
 - **generation mode target:** OpenAI-compatible
 - **default model identifier:** `mistralai/Mistral-7B-Instruct-v0.3`
 
+With the Task 1.1 GitHub repository variables set to `root_domain_name=supportdochq.com` and `backend_api_subdomain=api`, the deployed hostname becomes `api.supportdochq.com`.
+
 ## Prerequisites
 
-- Terraform `>= 1.6`
+- Terraform `>= 1.10`
 - AWS credentials with permission to create the listed resources
 - an existing **public Route 53 hosted zone**
 - a real root domain name you control, for example `example.com`
+- a pre-created S3 bucket for Terraform remote state
+- a GitHub OIDC-trusted IAM role for the workflow if you want PR `plan` and `main` `apply`
 
-## Deploy
+## One-time AWS bootstrap artifacts
+
+The JSON documents you will apply manually in AWS for Task 1.1 live under:
+
+- `infra/aws/task1-foundation/bootstrap/oidc-trust-pr-and-main.json`
+- `infra/aws/task1-foundation/bootstrap/supportdoc-tfstate-s3-rw.json`
+- `infra/aws/task1-foundation/bootstrap/supportdoc-task1-foundation-apply.json`
+
+## Local deploy flow
 
 ```bash
 cd infra/aws/task1-foundation
 cp terraform.tfvars.example terraform.tfvars
 # edit terraform.tfvars so root_domain_name points to a real Route 53 zone you own
-terraform init
+# optionally set route53_zone_id to pin the exact hosted zone instead of discovering by name
+terraform init \
+  -backend-config="bucket=<terraform-state-bucket>" \
+  -backend-config="key=supportdoc-rag-chatbot/mvp/task1-foundation.tfstate" \
+  -backend-config="region=us-west-2"
 terraform plan
 terraform apply
 ```
+
+## GitHub Actions deploy flow
+
+The repo-level workflow is:
+
+- `.github/workflows/terraform-task1-foundation.yml`
+
+Set these GitHub repository **Variables** before enabling the workflow:
+
+- `AWS_REGION`
+- `AWS_ROLE_ARN`
+- `TF_BACKEND_BUCKET`
+- `TF_BACKEND_KEY`
+- `TF_VAR_PROJECT`
+- `TF_VAR_ENVIRONMENT`
+- `TF_VAR_ROOT_DOMAIN_NAME`
+- `TF_VAR_BACKEND_API_SUBDOMAIN`
+- `TF_VAR_ROUTE53_ZONE_ID`
+
+The workflow uses OIDC only. Do not add long-lived AWS access keys for this path.
 
 ## What this stack intentionally does *not* create yet
 

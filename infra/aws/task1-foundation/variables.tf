@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "Target AWS region for the single MVP environment."
   type        = string
-  default     = "us-east-1"
+  default     = "us-west-2"
 }
 
 variable "project" {
@@ -21,10 +21,21 @@ variable "root_domain_name" {
   type        = string
 }
 
-variable "backend_api_subdomain" {
-  description = "Subdomain label prefix used to derive the public backend API FQDN."
+variable "route53_zone_id" {
+  description = "Optional exact public Route 53 hosted zone ID. Set this to pin the stack to one hosted zone instead of discovering by name."
   type        = string
-  default     = "api.supportdoc-mvp"
+  default     = null
+
+  validation {
+    condition     = try(trimspace(var.route53_zone_id), "") == "" || can(regex("^Z[A-Z0-9]+$", trimspace(var.route53_zone_id)))
+    error_message = "route53_zone_id must be null, empty, or a valid Route 53 hosted zone ID like Z123ABC456DEF."
+  }
+}
+
+variable "backend_api_subdomain" {
+  description = "Subdomain label or prefix used to derive the public backend API FQDN."
+  type        = string
+  default     = "api"
 }
 
 variable "vpc_cidr" {

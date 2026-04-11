@@ -2,22 +2,28 @@
 
 This note is the operator-facing companion to `infra/aws/task1-foundation/`.
 
-It translates the repo's actual backend/frontend config surface into the exact AWS foundation choices needed for **EPIC 12 / Task 1**.
+It translates the repo's actual backend/frontend config surface into the exact AWS foundation choices needed for **EPIC 12 / Task 1**, plus the Task 1.1 control-plane wiring needed to deploy that stack safely with Terraform remote state and GitHub Actions OIDC.
 
 ## Selected MVP defaults
 
-The Task 1 implementation locks these defaults unless a later task proves they must change:
+The Task 1 foundation plus Task 1.1 deploy path lock these defaults unless a later task proves they must change:
 
-- **AWS region:** `us-east-1`
+- **AWS region default:** `us-west-2`
 - **environment name:** `mvp`
 - **resource naming prefix:** `supportdoc-rag-chatbot-mvp`
-- **backend API domain pattern:** `api.supportdoc-mvp.<root_domain_name>`
+- **backend API hostname pattern:** `api.<root_domain_name>`
 - **ECR repository:** `supportdoc-rag-chatbot/mvp/backend`
-- **S3 bucket pattern:** `supportdoc-rag-chatbot-mvp-<account-id>-us-east-1-artifacts`
+- **S3 bucket pattern:** `supportdoc-rag-chatbot-mvp-<account-id>-us-west-2-artifacts`
 - **SSM path prefix:** `/supportdoc-rag-chatbot/mvp`
 - **Secrets Manager name prefix:** `supportdoc-rag-chatbot/mvp`
 - **backend log group:** `/aws/supportdoc-rag-chatbot/mvp/backend`
 - **inference log group:** `/aws/supportdoc-rag-chatbot/mvp/inference`
+
+When the deploy path is wired with the real GitHub repository variables from Task 1.1, those committed defaults resolve to:
+
+- **root domain:** `supportdochq.com`
+- **exact hosted zone ID:** `Z04948001WRDOJY1UUZYV`
+- **public backend hostname:** `api.supportdochq.com`
 
 ## Network layout
 
@@ -43,6 +49,32 @@ Task 1 pins the inbound traffic chain to:
 - **ECS SG** — backend port `9001` from the ALB SG only
 - **RDS SG** — PostgreSQL `5432` from the ECS SG only
 - **inference SG** — inference port `8000` from the ECS SG only
+
+## Task 1.1 deploy-control plane
+
+Task 1.1 does not change the runtime topology. It adds the safe deployment path around the Task 1 stack:
+
+- Terraform S3 backend with `use_lockfile = true`
+- optional exact hosted-zone targeting through `route53_zone_id`
+- one GitHub OIDC-trusted IAM role for PR `plan` and `main` `apply`
+- one workflow file: `.github/workflows/terraform-task1-foundation.yml`
+- one-time AWS bootstrap JSON artifacts kept under `infra/aws/task1-foundation/bootstrap/`
+
+### GitHub repository variables expected by the workflow
+
+Set these repository **Variables** before enabling the workflow:
+
+- `AWS_REGION`
+- `AWS_ROLE_ARN`
+- `TF_BACKEND_BUCKET`
+- `TF_BACKEND_KEY`
+- `TF_VAR_PROJECT`
+- `TF_VAR_ENVIRONMENT`
+- `TF_VAR_ROOT_DOMAIN_NAME`
+- `TF_VAR_BACKEND_API_SUBDOMAIN`
+- `TF_VAR_ROUTE53_ZONE_ID`
+
+Keep long-lived AWS access keys out of GitHub for this path.
 
 ## Repo-aligned runtime contract
 
@@ -108,7 +140,14 @@ Carry these outputs into the later deployment tasks:
 The repo previously carried AWS guidance as documentation only. Task 1 now adds:
 
 - a real Terraform foundation stack under `infra/aws/task1-foundation/`
-- a concrete region default of `us-east-1`
+- a concrete region default of `us-west-2`
 - real reserved names for SSM parameters and Secrets Manager secrets
 - a concrete HTTPS ALB + ACM + Route 53 entry point
 - a verification script that checks the accepted public/private and exposure boundaries
+
+Task 1.1 layers on top of that with:
+
+- a partial S3 backend block under `infra/aws/task1-foundation/versions.tf`
+- exact hosted-zone targeting through `route53_zone_id`
+- bootstrap IAM JSON artifacts for the one-time AWS setup
+- a GitHub Actions OIDC workflow for PR `plan` and `main` `apply`

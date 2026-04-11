@@ -683,7 +683,7 @@ The deploy-now AWS slice is still the backend shell on ECS/ALB in fixture mode. 
 
 The canonical AWS deployment baseline for that path now lives in `docs/architecture/aws_deployment.md`, with the rendered diagram in `docs/diagrams/aws_deployment.md` and the versioned Mermaid source in `docs/diagrams/aws_deployment.mmd`.
 
-The concrete EPIC 12 / Task 1 implementation now lives under `infra/aws/task1-foundation/`, with the repo-aligned operator contract in `docs/ops/aws_task1_foundation.md` and the verification helper in `scripts/verify-aws-task1.sh`.
+The concrete EPIC 12 / Task 1 implementation now lives under `infra/aws/task1-foundation/`, with the repo-aligned operator contract in `docs/ops/aws_task1_foundation.md`, the one-time AWS bootstrap JSON artifacts under `infra/aws/task1-foundation/bootstrap/`, the GitHub OIDC workflow in `.github/workflows/terraform-task1-foundation.yml`, and the verification helper in `scripts/verify-aws-task1.sh`.
 
 For copy-ready report wording on the baseline no-fine-tuning answer, the snapshot -> parse -> chunk -> embed -> index preparation flow, and the UI/AWS handoff boundary, use `docs/validation/report_and_aws_handoff_notes.md`.
 
@@ -697,7 +697,9 @@ For copy-ready report wording on the baseline no-fine-tuning answer, the snapsho
 - `docs/validation/README.md` — validation entry point for fixture smoke, artifact smoke, container runtime smoke, cloud runtime smoke, and reviewed trust artifacts
 - `docs/architecture/aws_deployment.md` — canonical AWS deployment baseline, deploy-now scope, and deferred options
 - `infra/aws/task1-foundation/` — Terraform stack for the EPIC 12 / Task 1 AWS foundation and HTTPS entry point
-- `docs/ops/aws_task1_foundation.md` — repo-aligned Task 1 env/secret contract and naming decisions
+- `infra/aws/task1-foundation/bootstrap/` — one-time AWS bootstrap JSON artifacts for the Task 1.1 OIDC role and state-bucket policies
+- `docs/ops/aws_task1_foundation.md` — repo-aligned Task 1 env/secret contract and Task 1.1 deploy-control-plane notes
+- `.github/workflows/terraform-task1-foundation.yml` — GitHub Actions OIDC workflow for PR plan / main apply on the Task 1 foundation stack
 - `docs/diagrams/aws_deployment.md` — AWS deployment diagram
 - `docs/adr/` — architecture decisions and project rationale
 - `docs/process/hybrid_retrieval_baseline.md` — default hybrid baseline config and run command

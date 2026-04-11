@@ -228,3 +228,19 @@ data/processed/indexes/
 data/evaluation/runs/
 tmp/eval/
 data/processed/chunks.jsonl
+
+# Terraform local state / overrides
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
