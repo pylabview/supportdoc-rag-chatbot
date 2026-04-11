@@ -1,0 +1,35 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListStatePrefix",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::supportdoc-tfstate-675450865367-us-west-2",
+      "Condition": {
+        "StringEquals": {
+          "s3:prefix": "supportdoc-rag-chatbot/mvp/task1-foundation.tfstate"
+        }
+      }
+    },
+    {
+      "Sid": "ReadWriteStateFile",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": "arn:aws:s3:::supportdoc-tfstate-675450865367-us-west-2/supportdoc-rag-chatbot/mvp/task1-foundation.tfstate"
+    },
+    {
+      "Sid": "ManageStateLockFile",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::supportdoc-tfstate-675450865367-us-west-2/supportdoc-rag-chatbot/mvp/task1-foundation.tfstate.tflock"
+    }
+  ]
+}

@@ -1,10 +1,12 @@
-aws_region            = "us-east-1"
+aws_region            = "us-west-2"
 project               = "supportdoc-rag-chatbot"
 environment           = "mvp"
 root_domain_name      = "example.com"
-backend_api_subdomain = "api.supportdoc-mvp"
+backend_api_subdomain = "api"
 
-# Keep the repo-aligned runtime defaults unless later tasks intentionally change them.
+# Optional hardening: pin the exact public hosted zone instead of discovering by name.
+route53_zone_id = null
+
 inference_model_id     = "mistralai/Mistral-7B-Instruct-v0.3"
 pgvector_schema_name   = "supportdoc_rag"
 pgvector_runtime_id    = "default"

@@ -9,15 +9,17 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  root_domain_name         = trimsuffix(var.root_domain_name, ".")
-  backend_api_domain       = "${var.backend_api_subdomain}.${local.root_domain_name}"
-  name_prefix              = "${var.project}-${var.environment}"
-  ecr_repository_name      = "${var.project}/${var.environment}/backend"
-  s3_bucket_name           = lower("${var.project}-${var.environment}-${data.aws_caller_identity.current.account_id}-${var.aws_region}-artifacts")
-  ssm_parameter_prefix     = "/${var.project}/${var.environment}"
-  secrets_prefix           = "${var.project}/${var.environment}"
-  backend_log_group_name   = "/aws/${var.project}/${var.environment}/backend"
-  inference_log_group_name = "/aws/${var.project}/${var.environment}/inference"
+  root_domain_name             = trimsuffix(var.root_domain_name, ".")
+  route53_zone_id              = try(trimspace(var.route53_zone_id), "")
+  use_explicit_route53_zone_id = local.route53_zone_id != ""
+  backend_api_domain           = "${var.backend_api_subdomain}.${local.root_domain_name}"
+  name_prefix                  = "${var.project}-${var.environment}"
+  ecr_repository_name          = "${var.project}/${var.environment}/backend"
+  s3_bucket_name               = lower("${var.project}-${var.environment}-${data.aws_caller_identity.current.account_id}-${var.aws_region}-artifacts")
+  ssm_parameter_prefix         = "/${var.project}/${var.environment}"
+  secrets_prefix               = "${var.project}/${var.environment}"
+  backend_log_group_name       = "/aws/${var.project}/${var.environment}/backend"
+  inference_log_group_name     = "/aws/${var.project}/${var.environment}/inference"
 
   public_subnet_map = {
     for index, cidr in var.public_subnet_cidrs :
@@ -66,9 +68,14 @@ locals {
   )
 }
 
-data "aws_route53_zone" "public" {
+data "aws_route53_zone" "public_by_name" {
+  count        = local.use_explicit_route53_zone_id ? 0 : 1
   name         = "${local.root_domain_name}."
   private_zone = false
+}
+
+locals {
+  public_route53_zone_id = local.use_explicit_route53_zone_id ? local.route53_zone_id : data.aws_route53_zone.public_by_name[0].zone_id
 }
 
 resource "aws_vpc" "this" {
@@ -518,7 +525,7 @@ resource "aws_route53_record" "backend_validation" {
   }
 
   allow_overwrite = true
-  zone_id         = data.aws_route53_zone.public.zone_id
+  zone_id         = local.public_route53_zone_id
   name            = each.value.name
   type            = each.value.type
   ttl             = 60
@@ -544,7 +551,7 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_route53_record" "backend_alias_a" {
-  zone_id = data.aws_route53_zone.public.zone_id
+  zone_id = local.public_route53_zone_id
   name    = local.backend_api_domain
   type    = "A"
 
@@ -556,7 +563,7 @@ resource "aws_route53_record" "backend_alias_a" {
 }
 
 resource "aws_route53_record" "backend_alias_aaaa" {
-  zone_id = data.aws_route53_zone.public.zone_id
+  zone_id = local.public_route53_zone_id
   name    = local.backend_api_domain
   type    = "AAAA"
 
