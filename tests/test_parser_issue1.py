@@ -189,3 +189,59 @@ def test_parse_document_raises_when_no_non_empty_sections(tmp_path: Path) -> Non
 
     with pytest.raises(ValueError, match="no non-empty sections"):
         parse_document(record, snapshot_root=snapshot_root)
+
+
+def test_build_sections_artifact_skips_front_matter_only_documents(tmp_path: Path) -> None:
+    snapshot_root = tmp_path / "snapshot"
+    empty_source = snapshot_root / "content/en/docs/concepts/configuration/_index.md"
+    full_source = snapshot_root / "content/en/docs/concepts/workloads.md"
+    empty_source.parent.mkdir(parents=True, exist_ok=True)
+    full_source.parent.mkdir(parents=True, exist_ok=True)
+
+    empty_source.write_text(
+        """---
+title: Configuration
+description: Resources that Kubernetes provides for configuring Pods.
+---
+""",
+        encoding="utf-8",
+    )
+    full_source.write_text("# Workloads\nWorkloads body.\n", encoding="utf-8")
+
+    manifest_path = tmp_path / "source_manifest.jsonl"
+    _write_manifest(
+        manifest_path,
+        [
+            {
+                "snapshot_id": "snapshot-001",
+                "source_path": "content/en/docs/concepts/configuration/_index.md",
+                "source_url": "https://kubernetes.io/docs/concepts/configuration/",
+                "doc_id": "content-en-docs-concepts-configuration-_index",
+                "language": "en",
+                "license": "CC BY 4.0",
+                "attribution": "Kubernetes Documentation © The Kubernetes Authors",
+                "allowed": True,
+            },
+            {
+                "snapshot_id": "snapshot-001",
+                "source_path": "content/en/docs/concepts/workloads.md",
+                "source_url": "https://kubernetes.io/docs/concepts/workloads/",
+                "doc_id": "workloads_001",
+                "language": "en",
+                "license": "CC BY 4.0",
+                "attribution": "Kubernetes Documentation © The Kubernetes Authors",
+                "allowed": True,
+            },
+        ],
+    )
+
+    output_path = tmp_path / "sections.jsonl"
+    sections = build_sections_artifact(
+        manifest_path=manifest_path,
+        snapshot_root=snapshot_root,
+        output_path=output_path,
+    )
+
+    assert len(sections) == 1
+    assert sections[0].doc_id == "workloads_001"
+    assert output_path.exists()

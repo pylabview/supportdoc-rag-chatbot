@@ -1,0 +1,19 @@
+{
+  "snapshot_id": "k8s-67eeb4df00",
+  "manifest_path": "data/manifests/source_manifest.jsonl",
+  "sections_path": "data/parsed/sections.jsonl",
+  "chunks_path": "data/processed/chunks.jsonl",
+  "document_count": 1501,
+  "section_count": 9694,
+  "chunk_count": 11571,
+  "estimated_token_count": 1563378,
+  "empty_section_count": 0,
+  "empty_chunk_count": 0,
+  "duplicate_section_ids": 0,
+  "duplicate_chunk_ids": 0,
+  "missing_metadata_count": 0,
+  "warning_count": 0,
+  "error_count": 0,
+  "warnings": [],
+  "errors": []
+}
