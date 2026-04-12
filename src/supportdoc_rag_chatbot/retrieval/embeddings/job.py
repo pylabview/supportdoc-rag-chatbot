@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from itertools import islice
 from pathlib import Path
 from typing import Iterable, Iterator, Sequence
@@ -80,6 +81,8 @@ def build_embedding_artifacts(
 
     row_count, vector_dimension = write_vector_rows(vectors_path, iter_embedding_rows())
 
+    relative_vectors_path = os.path.relpath(vectors_path, start=metadata_path.parent)
+
     metadata = EmbeddingMetadata(
         artifact_version=ARTIFACT_VERSION,
         source_chunks_path=str(chunks_path),
@@ -87,7 +90,7 @@ def build_embedding_artifacts(
         vector_dimension=vector_dimension,
         row_count=row_count,
         snapshot_id=_resolve_snapshot_id(chunks),
-        vectors_path=str(vectors_path),
+        vectors_path=relative_vectors_path,
     )
     write_embedding_metadata(metadata_path, metadata)
     return metadata

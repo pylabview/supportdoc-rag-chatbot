@@ -107,10 +107,9 @@ def build_faiss_index_backend(
     embedding_metadata_path: Path = DEFAULT_EMBEDDING_METADATA_PATH,
 ) -> FaissDenseIndexBackend:
     embedding_metadata = read_embedding_metadata(embedding_metadata_path)
-    vectors_path = _required_artifact_path(
-        embedding_metadata.vectors_path,
-        label="vectors_path",
-        source_path=embedding_metadata_path,
+    vectors_path = _resolve_vectors_path(
+        embedding_metadata_path=embedding_metadata_path,
+        raw_path=embedding_metadata.vectors_path,
     )
     chunks_path = _required_artifact_path(
         embedding_metadata.source_chunks_path,
@@ -208,6 +207,23 @@ def load_faiss_index_backend(
         )
 
     return FaissDenseIndexBackend(index=index, metadata=metadata, chunk_ids=row_mapping.chunk_ids)
+
+
+def _resolve_vectors_path(*, embedding_metadata_path: Path, raw_path: str | None) -> Path:
+    if not raw_path:
+        raise ValueError(f"Missing vectors_path in artifact metadata: {embedding_metadata_path}")
+
+    resolved = Path(raw_path)
+    if resolved.is_absolute():
+        return resolved
+
+    metadata_relative = embedding_metadata_path.parent / resolved
+
+    # New embedding metadata writes vectors_path relative to the metadata file.
+    # Keep a small fallback for older repo-root-relative metadata during transition.
+    if metadata_relative.exists() or not resolved.exists():
+        return metadata_relative
+    return resolved
 
 
 def _required_artifact_path(raw_path: str | None, *, label: str, source_path: Path) -> Path:
