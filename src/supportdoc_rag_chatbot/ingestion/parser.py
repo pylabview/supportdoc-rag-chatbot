@@ -414,7 +414,12 @@ def parse_manifest(manifest_path: Path, *, snapshot_root: Path) -> Iterator[Sect
     for record in records:
         if not record.allowed:
             continue
-        yield from parse_document(record, snapshot_root=snapshot_root)
+        try:
+            yield from parse_document(record, snapshot_root=snapshot_root)
+        except ValueError as exc:
+            if "produced no non-empty sections" in str(exc):
+                continue
+            raise
 
 
 def _normalize_newlines(text: str) -> str:
