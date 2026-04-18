@@ -1,0 +1,135 @@
+name: backend-ecr-publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Optional explicit image tag. Defaults to the current commit SHA.
+        required: false
+        type: string
+      push_latest:
+        description: Also push the latest tag.
+        required: false
+        default: true
+        type: boolean
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/backend-ecr-publish.yml'
+      - 'docker/backend.Dockerfile'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'README.md'
+      - 'src/**'
+      - 'scripts/**'
+      - 'docs/contracts/**'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: backend-ecr-publish-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ACCOUNT_ID: '675450865367'
+  ECR_REPOSITORY: ${{ vars.TF_VAR_PROJECT }}/${{ vars.TF_VAR_ENVIRONMENT }}/backend
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Validate required repo variables
+        run: |
+          set -euo pipefail
+          test -n "${AWS_REGION}" || { echo "Missing repo variable AWS_REGION" >&2; exit 1; }
+          test -n "${{ vars.AWS_ROLE_ARN }}" || { echo "Missing repo variable AWS_ROLE_ARN" >&2; exit 1; }
+          test -n "${{ vars.TF_VAR_PROJECT }}" || { echo "Missing repo variable TF_VAR_PROJECT" >&2; exit 1; }
+          test -n "${{ vars.TF_VAR_ENVIRONMENT }}" || { echo "Missing repo variable TF_VAR_ENVIRONMENT" >&2; exit 1; }
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-session-name: gha-backend-ecr-publish
+          allowed-account-ids: ${{ env.AWS_ACCOUNT_ID }}
+
+      - name: Verify ECR repository exists
+        run: |
+          set -euo pipefail
+          aws ecr describe-repositories \
+            --region "$AWS_REGION" \
+            --repository-names "$ECR_REPOSITORY" >/dev/null
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Prepare image metadata
+        id: prep
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          INPUT_TAG: ${{ github.event.inputs.image_tag }}
+          INPUT_PUSH_LATEST: ${{ github.event.inputs.push_latest }}
+        run: |
+          set -euo pipefail
+          SHORT_SHA="${GITHUB_SHA::12}"
+          IMAGE_TAG="${INPUT_TAG:-}"
+          if [ -z "$IMAGE_TAG" ]; then
+            IMAGE_TAG="$SHORT_SHA"
+          fi
+
+          PUSH_LATEST=false
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            PUSH_LATEST=true
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "${INPUT_PUSH_LATEST:-true}" = "true" ]; then
+            PUSH_LATEST=true
+          fi
+
+          IMAGE_URI="${REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+          {
+            echo "image_tag=${IMAGE_TAG}"
+            echo "image_uri=${IMAGE_URI}"
+            echo "push_latest=${PUSH_LATEST}"
+            echo 'tags<<EOF'
+            echo "${IMAGE_URI}"
+            if [ "$PUSH_LATEST" = true ]; then
+              echo "${REGISTRY}/${ECR_REPOSITORY}:latest"
+            fi
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/backend.Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: ${{ steps.prep.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Write job summary
+        run: |
+          {
+            echo '## Backend ECR publish complete'
+            echo
+            echo "- Repository: \`${ECR_REPOSITORY}\`"
+            echo "- Primary image URI: \`${{ steps.prep.outputs.image_uri }}\`"
+            echo "- latest tag pushed: \`${{ steps.prep.outputs.push_latest }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
