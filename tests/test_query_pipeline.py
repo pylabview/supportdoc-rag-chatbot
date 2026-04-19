@@ -144,12 +144,40 @@ def test_query_orchestrator_retries_parse_failure_once_then_refuses() -> None:
     assert response.refusal.reason_code is RefusalReasonCode.CITATION_VALIDATION_FAILED
 
 
-def test_query_orchestrator_retries_citation_invalid_output_once_then_refuses() -> None:
-    invalid_response = build_example_answer_response().model_copy(
+def test_query_orchestrator_repairs_missing_citation_markers_before_retry() -> None:
+    missing_marker_response = build_example_answer_response().model_copy(
         update={
             "final_answer": (
                 "A Pod is the smallest deployable unit in Kubernetes and can run one or more "
                 "containers that share network and storage resources."
+            )
+        }
+    )
+    generation_client = SequenceGenerationClient(
+        [GenerationResult.success(missing_marker_response)]
+    )
+    orchestrator = QueryOrchestrator(
+        retriever=FixtureQueryRetriever(),
+        generation_client=generation_client,
+        top_k=3,
+    )
+
+    response = orchestrator.run("What is a Pod?")
+
+    assert len(generation_client.requests) == 1
+    assert response.refusal.is_refusal is False
+    assert response.citations[0].marker == "[1]"
+    assert response.final_answer.endswith("resources [1].")
+
+
+def test_query_orchestrator_retries_non_repairable_citation_invalid_output_once_then_refuses() -> (
+    None
+):
+    invalid_response = build_example_answer_response().model_copy(
+        update={
+            "final_answer": (
+                "A Pod is the smallest deployable unit in Kubernetes and can run one or more "
+                "containers that share network and storage resources [99]."
             )
         }
     )
