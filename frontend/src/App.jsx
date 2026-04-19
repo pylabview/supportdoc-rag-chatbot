@@ -17,7 +17,8 @@ const BACKEND_STATUS_LABELS = {
   incompatible: "Incompatible",
 };
 
-const REQUEST_TIMEOUT_MS = 10000;
+const READINESS_TIMEOUT_MS = 10000;
+const QUERY_TIMEOUT_MS = 120000;
 const CITATION_MARKER_PATTERN = /(\[\d+\])/g;
 
 const INITIAL_BACKEND_STATUS = {
@@ -81,9 +82,9 @@ function normalizeErrorMessage(error) {
   return "The backend request failed.";
 }
 
-async function requestJson(url, init = {}) {
+async function requestJson(url, init = {}, timeoutMs = READINESS_TIMEOUT_MS) {
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await window.fetch(url, {
@@ -121,13 +122,17 @@ async function requestJson(url, init = {}) {
 }
 
 async function requestQuery(apiBaseUrl, question) {
-  return requestJson(buildApiUrl(apiBaseUrl, "/query"), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
+  return requestJson(
+    buildApiUrl(apiBaseUrl, "/query"),
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ question }),
     },
-    body: JSON.stringify({ question }),
-  });
+    QUERY_TIMEOUT_MS
+  );
 }
 
 async function requestReadiness(apiBaseUrl) {
