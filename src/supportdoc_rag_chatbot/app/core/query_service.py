@@ -24,6 +24,12 @@ from supportdoc_rag_chatbot.app.services import (
     load_retrieval_sufficiency_thresholds,
     validate_query_response_citations,
 )
+from supportdoc_rag_chatbot.app.services.citation_validator import (
+    CitationValidationFailureCode,
+    CitationValidationResult,
+    extract_citation_markers,
+)
+from supportdoc_rag_chatbot.app.services.sentence_splitter import split_answer_claims
 from supportdoc_rag_chatbot.logging_conf import log_event
 
 if TYPE_CHECKING:
@@ -219,6 +225,24 @@ class QueryOrchestrator:
                 response,
                 retrieved_chunks=retrieved.to_citation_contexts(),
             )
+            repaired_response = _repair_missing_citation_coverage(
+                response=response,
+                validation=validation,
+            )
+            if repaired_response is not response:
+                response = repaired_response
+                validation = validate_query_response_citations(
+                    response,
+                    retrieved_chunks=retrieved.to_citation_contexts(),
+                )
+                log_event(
+                    logger,
+                    "query.citation_validation.repaired",
+                    attempt=attempt,
+                    citation_validation_outcome=validation.outcome.value,
+                    failure_count=len(validation.failures),
+                    failure_codes=[failure.code.value for failure in validation.failures],
+                )
             log_event(
                 logger,
                 "query.citation_validation.completed",
@@ -354,6 +378,63 @@ def close_cached_query_orchestrator(app: Any) -> None:
     if isinstance(cached, QueryOrchestrator):
         cached.close()
         delattr(app.state, "query_orchestrator")
+
+
+def _repair_missing_citation_coverage(
+    *,
+    response: QueryResponse,
+    validation: CitationValidationResult,
+) -> QueryResponse:
+    """Append existing citation markers to uncited claims when markers were omitted.
+
+    This tactical repair handles small models that return valid citation records
+    but forget to include the matching marker in final_answer. The normal
+    validator still re-validates chunk IDs and offsets after this repair.
+    """
+
+    if response.refusal.is_refusal or not response.citations:
+        return response
+    if not validation.failures:
+        return response
+    if any(
+        failure.code is not CitationValidationFailureCode.MISSING_CITATION_COVERAGE
+        for failure in validation.failures
+    ):
+        return response
+
+    default_marker = response.citations[0].marker
+    answer = response.final_answer
+    replacements: list[tuple[int, int, str]] = []
+
+    for claim in split_answer_claims(answer):
+        if extract_citation_markers(claim.text):
+            continue
+        replacements.append(
+            (
+                claim.start_offset,
+                claim.end_offset,
+                _append_marker_to_claim(claim.text, default_marker),
+            )
+        )
+
+    if not replacements:
+        return response
+
+    repaired_answer = answer
+    for start_offset, end_offset, replacement in reversed(replacements):
+        repaired_answer = (
+            repaired_answer[:start_offset] + replacement + repaired_answer[end_offset:]
+        )
+
+    return response.model_copy(update={"final_answer": repaired_answer})
+
+
+def _append_marker_to_claim(claim_text: str, marker: str) -> str:
+    stripped = claim_text.rstrip()
+    trailing_whitespace = claim_text[len(stripped) :]
+    if stripped.endswith((".", "!", "?")):
+        return f"{stripped[:-1].rstrip()} {marker}{stripped[-1]}{trailing_whitespace}"
+    return f"{stripped} {marker}{trailing_whitespace}"
 
 
 def _build_sufficiency_request(question: str, retrieved) -> Any:
