@@ -172,7 +172,7 @@ function CitationMarkers({ citations }) {
     <div className="result-subsection">
       <h4>Citation markers</h4>
       <p className="helper-text result-note">
-        This local demo follows the frozen browser contract: citation markers only.
+        This AWS MVP demo follows the frozen browser contract: citation markers only.
         Rich evidence cards are deferred because the current <code>/query</code>
         response does not include request-scoped evidence text.
         {hasSourceMetadata
@@ -218,7 +218,7 @@ function ResultPanel({ uiState, result, backendErrorMessage }) {
   if (uiState === "empty_input") {
     return (
       <div className="result-state" aria-live="polite">
-        <p>Enter a question to query the local backend.</p>
+        <p>Enter a question to query the deployed backend.</p>
       </div>
     );
   }
@@ -278,7 +278,7 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [backendErrorMessage, setBackendErrorMessage] = useState(null);
   const [statusText, setStatusText] = useState(
-    "Enter a question to query the live backend. The status area also probes /readyz for local diagnostics."
+    "Enter a question to query the live AWS backend. The status area also probes /readyz for deployment diagnostics."
   );
   const [lastSubmittedQuestion, setLastSubmittedQuestion] = useState("");
   const [backendStatus, setBackendStatus] = useState(INITIAL_BACKEND_STATUS);
@@ -371,11 +371,11 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="panel page-header">
-        <p className="eyebrow">Local browser demo</p>
+        <p className="eyebrow">AWS MVP browser demo</p>
         <h1>SupportDoc RAG Chatbot</h1>
         <p>
           Thin React SPA for the frozen <code>/query</code> contract, now wired to the
-          live local backend.
+          live AWS backend.
         </p>
       </header>
 
@@ -398,7 +398,7 @@ export default function App() {
             </p>
             <p className="privacy-warning" role="note">
               Do not paste secrets, credentials, access tokens, or other sensitive data
-              into this local demo.
+              into this demo.
             </p>
 
             <div className="form-actions">
