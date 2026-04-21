@@ -42,7 +42,7 @@ API-first MVP validation with reviewed evidence, documented smoke paths, and sou
 
 ## 2A. Demo day quick start
 
-"Fixture Mode" is the default option for running the local browser demo. This will start the backend with a known set of data before you introduce the retrieval artifacts. The "Artifact Mode" is the second alternative for running the demo after you have created the FAISS artifacts locally.
+Fixture mode is the canonical first-run path. Artifact mode is the optional second path. "Fixture Mode" is the default option for running the local browser demo. This will start the backend with a known set of data before you introduce the retrieval artifacts. The "Artifact Mode" is the second alternative for running the demo after you have created the FAISS artifacts locally.
 
 From the repo root:
 
@@ -682,7 +682,7 @@ The single closeout status page for Epic 10 now lives at `docs/validation/mvp_re
 
 The overall long-term strategy for the architecture is to use the FastAPI server backend with a front-end, persistent artifacts, a vector retrieval service, and a swappable generation backend. The **currently validated MVP scope in this repository remains backend-first**, but it also includes the local browser demo scaffold and the browser-safe public configuration seam, `VITE_SUPPORTDOC_API_BASE_URL`.
 
-The deploy-now AWS slice remains the backend shell on ECS/ALB, running in fixture mode. This very same codebase also contains the initial cloud-based runtime execution path, including `pgvector` fetching, a promotion/load utility for PostgreSQL, an inference adapter that works with OpenAI-like chat-completion endpoints using vLLM or TGI endpoints, and, finally, cloud-runtime smoke tests packaged in a single bundle. Similarly, the first browser-based AWS slice continues to use the same backend API contract, along with its own hosted frontend, accessing it via the `VITE_SUPPORTDOC_API_BASE_URL`.
+The deploy-now AWS slice remains the backend shell on ECS/ALB, running in fixture mode. This very same codebase also contains the initial cloud-based runtime execution path, including `pgvector` fetching, a promotion/load utility for PostgreSQL, an OpenAI-compatible inference adapter that works with chat-completion endpoints using vLLM or TGI endpoints, and, finally, cloud-runtime smoke tests packaged in a single bundle. Similarly, the first browser-based AWS slice continues to use the same backend API contract, along with its own hosted frontend, accessing it via the `VITE_SUPPORTDOC_API_BASE_URL`.
 
 The canonical AWS deployment baseline for that path now lives in `docs/architecture/aws_deployment.md`, with the rendered diagram in `docs/diagrams/aws_deployment.md` and the versioned Mermaid source in `docs/diagrams/aws_deployment.mmd`.
 
