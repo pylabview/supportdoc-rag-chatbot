@@ -2,11 +2,11 @@
 
 ---
 
-SupportDoc RAG Chatbot is a document-grounded support assistant that answers user questions using an approved documentation corpus and provides verifiable citations to the exact supporting source passages. The project is designed to reduce hallucinations by combining retrieval-augmented generation (RAG), citation validation, and explicit refusal behavior when evidence is missing or insufficient.
+SupportDoc RAG Chatbot is a helper application that uses authorized documents to answer questions. It provides quotations from sources that allow you to verify its claims. This project seeks to minimize the provision of inaccurate or erroneous answers through retrieval-augmented generation (RAG), citation verification, and explicit refusal when evidence is insufficient.
 
-The long-term goal is to deliver a production-style web application with a clear separation between ingestion, retrieval, generation, validation, and deployment concerns. At a high level, the system ingests an allowlisted documentation snapshot, converts it into structured chunks with provenance metadata, retrieves relevant evidence for a user query, generates an answer using an open-source LLM, and returns citations for each supported claim. If the retrieved evidence is weak, incomplete, or fails validation, the system refuses rather than guessing.
+Project goal: develop a full-scale web application with clearly demarcated stages of document retrieval, evidence discovery, generation, verification, and deployment. Briefly, the pipeline accepts an authorized snapshot of documents, structures it, sources it, identifies relevant evidence in the context of a question, generates an answer using an open-source language model, and outputs citations for each supported claim. If the evidence is inadequate, unreliable, or fails verification tests, the system refuses to provide an answer.
 
-The initial corpus is a pinned snapshot of Kubernetes documentation so the project can iterate on retrieval, answer grounding, and citation validation against a reproducible support-doc dataset.
+Dataset: a static snapshot of Kubernetes documentation to enable this project to test retrieval, grounding, and citation verification on a reproducible support-docs dataset.
 
 ---
 
@@ -42,7 +42,7 @@ API-first MVP validation with reviewed evidence, documented smoke paths, and sou
 
 ## 2A. Demo day quick start
 
-Fixture mode is the canonical first-run path for the local browser demo because it boots the backend with deterministic checked-in trust fixtures before you add local retrieval artifacts. Artifact mode is the optional second path once you already have local FAISS artifacts on disk.
+"Fixture Mode" is the default option for running the local browser demo. This will start the backend with a known set of data before you introduce the retrieval artifacts. The "Artifact Mode" is the second alternative for running the demo after you have created the FAISS artifacts locally.
 
 From the repo root:
 
@@ -86,7 +86,7 @@ The browser scaffold targets **Python 3.13** on the backend side and Node `^20.1
 The project follows a three-layer architecture:
 
 ### Model Layer
-This layer contains the ML components used for embeddings and answer generation. For local retrieval development, the project currently defaults to a lightweight sentence-transformers embedding model suitable for laptop workflows, while keeping the embedding model configurable so E5, BGE, or hosted embedding backends can be swapped in later.
+In this layer, the modules for embeddings and generation have been added. The current version of this project uses a lightweight sentence-transformers embedding module, which runs well even on a laptop. However, at some point later, this module can be replaced by E5, BGE, or even the embedding service.
 
 ### Application Layer
 This is the main orchestration layer implemented in this repository. It is responsible for:
@@ -100,7 +100,8 @@ This is the main orchestration layer implemented in this repository. It is respo
 - refusal enforcement.
 
 ### Infrastructure Layer
-The deploy-now MVP is still **API-first** for backend deployment, but the repository now also includes a checked-in React SPA scaffold under `frontend/` for the thin local browser demo and the later browser-backed AWS path. The current AWS-ready slice is the backend shell first; separate browser hosting plus cloud retrieval/inference integration are documented in `docs/architecture/aws_deployment.md`.
+The MVP for deploy-now still maintains an **API-first** approach to the backend architecture; however, the repository now includes scaffolding code for a React SPA in the `frontend/` directory for the local browser demo and eventual browser-based AWS integration. The backend shell has been implemented for AWS compatibility, while browser hosting and AWS inference have been documented through
+`docs/architecture/aws_deployment.md`.
 
 ### High-Level System Flow
 
@@ -157,7 +158,7 @@ This keeps the embedding job reusable by FAISS, pgvector, or any later retrieval
 
 ## 4A. Local FAISS Index Artifacts (MVP)
 
-The first dense retrieval backend uses FAISS with a flat inner-product index. For cosine-similarity-compatible retrieval, the backend L2-normalizes database vectors before adding them to `IndexFlatIP`, then normalizes query vectors before search.
+In the first dense retrieval index, we used FAISS with a flat index for inner products. When using cosine similarity, the vectors in the database are L2-normalized before storing them in the `IndexFlatIP` structure.
 
 Default output paths:
 
@@ -177,7 +178,7 @@ The metadata sidecar records at least:
 - vector artifact path, and
 - snapshot ID when available.
 
-The row-mapping artifact stores the chunk IDs in row order so the FAISS index can stay focused on vector search while chunk provenance remains in the original `chunks.jsonl` artifact.
+The row-mapping artifact stores the chunk IDs in row order, so the FAISS index can focus on vector search while chunk provenance remains in the original `chunks.jsonl` artifact.
 
 ---
 
@@ -202,7 +203,7 @@ data/
 docs/
   adr/                    # Architecture decisions
   data/                   # Corpus and licensing docs
-  diagrams/               # Architecture / ingestion diagrams
+  diagrams/               # Architecture/ingestion diagrams
   process/                # Repo workflow and governance docs
 ```
 
@@ -210,7 +211,7 @@ docs/
 
 ## 6. Corpus and Licensing
 
-The current MVP corpus is a pinned Kubernetes documentation snapshot. Corpus governance, allowlist rules, and licensing decisions are documented in `docs/data/corpus.md` and the ADRs under `docs/adr/`.
+The current MVP corpus is a pinned snapshot of Kubernetes documentation. Corpus governance, allowlist rules, and licensing decisions are documented in `docs/data/corpus.md` and the ADRs under `docs/adr/`.
 
 ---
 
@@ -575,10 +576,10 @@ docker run --rm -p 9001:9001 \
 
 Artifact mode inside the container image is still deferred. The current container work closes the AWS-targeted cloud path, not the local-FAISS-in-container path:
 
-- the image now includes the runtime needed for fixture mode plus cloud-backed `pgvector` retrieval with local query embedding,
+- The image now includes the runtime needed for fixture mode plus cloud-backed `pgvector` retrieval with local query embedding,
 - `./scripts/smoke-container-runtime.sh` remains the canonical fixture-first packaged smoke path,
 - `./scripts/smoke-cloud-runtime.sh` is the cloud-backed packaged smoke path for `pgvector` + OpenAI-compatible inference, and
-- the compose workflow is still intentionally fixture-first instead of defining a mount contract for local FAISS artifacts.
+- The compose workflow is still intentionally fixture-first instead of defining a mount contract for local FAISS artifacts.
 
 If artifact-mode container support is needed later, it should be added as an explicit follow-on task with a documented artifact mount/input contract rather than inferred ad hoc.
 
@@ -589,7 +590,7 @@ If artifact-mode container support is needed later, it should be added as an exp
 
 The thin local browser scaffold now lives under `frontend/` and is documented in `frontend/README.md`.
 
-This is the checked-in React SPA scaffold under `frontend/` for the local browser demo. It stays intentionally thin and uses the backend contract documented in the browser-demo integration contract at `docs/process/browser_demo_contract.md`.
+This is the checked-in React SPA scaffold under `frontend/` for the local browser demo. It stays intentionally thin and uses the backend contract documented in the `docs/process/browser_demo_contract.md` file.
 
 Canonical local startup is:
 
@@ -635,7 +636,7 @@ The evaluation helpers in `src/supportdoc_rag_chatbot/evaluation/dev_qa.py` can 
 
 ## 9B. Hybrid Retrieval Baseline Evaluation
 
-The repository now includes a hybrid baseline runner that combines dense FAISS retrieval with BM25 lexical retrieval using Reciprocal Rank Fusion (RRF). The hybrid baseline collects ranked candidates from both component retrievers, merges duplicate chunk IDs deterministically, and writes deterministic artifacts under `data/evaluation/runs/` by default.
+There is now a hybrid baseline runner in the codebase. This involves using Dense FAISS and Lexical BM25 retrievals in the Reciprocal Rank Fusion (RRF) method. The hybrid baseline combines ranked candidates from both retrieval methods, removes duplicates using deterministic chunk IDs, and generates deterministic runs in `data/evaluation/runs/`.
 
 Default hybrid baseline command:
 
@@ -656,9 +657,9 @@ See `docs/process/hybrid_retrieval_baseline.md` for the default fusion strategy,
 
 ## 9C. Retrieval Comparison Note
 
-A retrieval-only comparison note now lives at `docs/process/retrieval_comparison_notes.md`. It records the current Epic 4 baseline configs, reference fixture metrics from the shared evaluation harness, qualitative trade-offs, and a **provisional default recommendation of `hybrid-rrf`** for follow-on work.
+There is a new comparison note for retrievals only in `docs/process/retrieval_comparison_notes.md`, which includes current baselines in Epic 4, the reference metrics from the shared evaluation harness, qualitative considerations, and a **tentative recommendation to use `hybrid-rrf` retrieval as the default choice for future work **.
 
-Because the repository does not commit local processed chunk / embedding / FAISS artifacts, the comparison note distinguishes between reproducible fixture metrics and future corpus-level runs that can be regenerated locally when those artifacts exist. That recommendation is still an evaluation artifact, not a claim that the current checked-in API path already runs hybrid retrieval end to end.
+Because the repository does not store local chunk/embedding/FAISS artifacts in its commit history, the comparison note distinguishes between reproducible fixture metrics and future runs on the full corpus once those artifacts become available. The latter is an evaluation artifact but not necessarily the implementation of the current API path.
 
 ## 9D. Validation index and reviewed trust artifacts
 
@@ -679,9 +680,9 @@ The single closeout status page for Epic 10 now lives at `docs/validation/mvp_re
 
 ## 10. Deployment Overview
 
-The intended long-term deployment path is a FastAPI backend with a web frontend, persistent artifact storage, a vector retrieval layer, and a replaceable generation backend. The **current validated MVP scope in this repo is still backend-first**, but it now includes the checked-in local browser demo scaffold and one browser-safe public config seam: `VITE_SUPPORTDOC_API_BASE_URL`.
+The overall long-term strategy for the architecture is to use the FastAPI server backend with a front-end, persistent artifacts, a vector retrieval service, and a swappable generation backend. The **currently validated MVP scope in this repository remains backend-first**, but it also includes the local browser demo scaffold and the browser-safe public configuration seam, `VITE_SUPPORTDOC_API_BASE_URL`.
 
-The deploy-now AWS slice is still the backend shell on ECS/ALB in fixture mode. The same repo now also includes the first cloud-backed runtime path: `pgvector` retrieval, a promotion/load CLI for PostgreSQL, an OpenAI-compatible inference adapter that can target vLLM or TGI-style chat completion endpoints, and a packaged cloud runtime smoke path. The first browser-backed AWS slice still uses the same backend contract plus separately hosted frontend wiring through `VITE_SUPPORTDOC_API_BASE_URL` and explicit backend CORS origin settings.
+The deploy-now AWS slice remains the backend shell on ECS/ALB, running in fixture mode. This very same codebase also contains the initial cloud-based runtime execution path, including `pgvector` fetching, a promotion/load utility for PostgreSQL, an inference adapter that works with OpenAI-like chat-completion endpoints using vLLM or TGI endpoints, and, finally, cloud-runtime smoke tests packaged in a single bundle. Similarly, the first browser-based AWS slice continues to use the same backend API contract, along with its own hosted frontend, accessing it via the `VITE_SUPPORTDOC_API_BASE_URL`.
 
 The canonical AWS deployment baseline for that path now lives in `docs/architecture/aws_deployment.md`, with the rendered diagram in `docs/diagrams/aws_deployment.md` and the versioned Mermaid source in `docs/diagrams/aws_deployment.mmd`.
 
@@ -714,4 +715,8 @@ For copy-ready report wording on the baseline no-fine-tuning answer, the snapsho
 - `docs/process/refusal_response_builder.md` — canonical refusal messages and builder entry points
 - `docs/validation/final_evidence_review.md` — reviewed evidence correctness summary for the current MVP trust pass
 - `docs/validation/report_and_aws_handoff_notes.md` — report-ready baseline notes for no fine-tuning, retrieval preparation flow, and the UI/AWS handoff boundary
-- `PROPOSAL.md` — historical proposal / delivery framing only; do not treat it as the operational source of truth
+- `PROPOSAL.md` — historical proposal/delivery framing only; do not treat it as the operational source of truth
+- `docs/validation/mvp_readiness.md` — final MVP readiness decision, pass/fail matrix, and Epic 10 closure checklist
+- `docs/process/retrieval_dev_qa.md` — development QA schema, annotation rules, and retrieval validation workflow
+- `docs/diagrams/aws_deployment.mmd` — versioned Mermaid source for the AWS deployment diagram
+- `docs/contracts/` — generated trust-contract schema and checked-in answer/refusal fixtures
