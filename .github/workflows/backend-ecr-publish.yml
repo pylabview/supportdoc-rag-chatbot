@@ -16,14 +16,14 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/backend-ecr-publish.yml'
-      - 'docker/backend.Dockerfile'
-      - 'pyproject.toml'
-      - 'uv.lock'
-      - 'README.md'
-      - 'src/**'
-      - 'scripts/**'
-      - 'docs/contracts/**'
+      - ".github/workflows/backend-ecr-publish.yml"
+      - "docker/backend.Dockerfile"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "README.md"
+      - "src/**"
+      - "scripts/**"
+      - "docs/contracts/**"
 
 permissions:
   contents: read
@@ -35,13 +35,13 @@ concurrency:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_ACCOUNT_ID: '675450865367'
+  AWS_ACCOUNT_ID: "675450865367"
   ECR_REPOSITORY: ${{ vars.TF_VAR_PROJECT }}/${{ vars.TF_VAR_ENVIRONMENT }}/backend
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
 
     steps:
       - name: Check out repository
